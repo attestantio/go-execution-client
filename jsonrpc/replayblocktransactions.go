@@ -15,11 +15,11 @@ package jsonrpc
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/attestantio/go-execution-client/api"
+	"github.com/attestantio/go-execution-client/util"
 	"github.com/pkg/errors"
 )
 
@@ -38,14 +38,19 @@ func (s *Service) ReplayBlockTransactions(ctx context.Context, blockID string) (
 func (s *Service) replayBlockTransactions(ctx context.Context, height int64) ([]*api.TransactionResult, error) {
 	var transactionResults []*api.TransactionResult
 
-	if height == -1 {
-		if err := s.client.CallFor(&transactionResults, "trace_replayBlockTransactions", "latest", []string{"stateDiff"}); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := s.client.CallFor(&transactionResults, "trace_replayBlockTransactions", fmt.Sprintf("0x%x", height), []string{"stateDiff"}); err != nil {
-			return nil, err
-		}
+	log.Trace().Int64("height", height).Msg("Replaying block transactions")
+	var err error
+	switch {
+	case height < 0:
+		err = s.client.CallFor(&transactionResults, "trace_replayBlockTransactions", "latest", []string{"stateDiff"})
+	case height == 0:
+		// Block 0 is a special case, with no transactions.
+		transactionResults = make([]*api.TransactionResult, 0)
+	default:
+		err = s.client.CallFor(&transactionResults, "trace_replayBlockTransactions", util.MarshalUint32(uint32(height)), []string{"stateDiff"})
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	return transactionResults, nil
