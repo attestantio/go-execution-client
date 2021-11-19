@@ -16,6 +16,8 @@ package jsonrpc
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"strings"
 	"time"
 
@@ -52,25 +54,27 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 		log = log.Level(parameters.logLevel)
 	}
 
-	//	client := &http.Client{
-	//		Transport: &http.Transport{
-	//			DialContext: (&net.Dialer{
-	//				Timeout:   30 * time.Second,
-	//				KeepAlive: 30 * time.Second,
-	//				DualStack: true,
-	//			}).DialContext,
-	//			MaxIdleConns:        64,
-	//			MaxIdleConnsPerHost: 64,
-	//			IdleConnTimeout:     384 * time.Second,
-	//		},
-	//	}
+	client := &http.Client{
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:        64,
+			MaxIdleConnsPerHost: 64,
+			IdleConnTimeout:     384 * time.Second,
+		},
+	}
 
 	address := parameters.address
 	if !strings.HasPrefix(address, "http") {
 		address = fmt.Sprintf("http://%s", parameters.address)
 	}
 
-	rpcClient := jsonrpc.NewClient(address)
+	rpcClient := jsonrpc.NewClientWithOpts(address, &jsonrpc.RPCClientOpts{
+		HTTPClient: client,
+	})
 
 	s := &Service{
 		ctx:     ctx,
