@@ -29,6 +29,12 @@ type Service interface {
 	Address() string
 }
 
+// BlockReplaysProvider is the interface for providing block replays.
+type BlockReplaysProvider interface {
+	// ReplayBlockTransactions obtains traces for all transactions in a block.
+	ReplayBlockTransactions(ctx context.Context, blockID string) ([]*api.TransactionResult, error)
+}
+
 // BlocksProvider is the interface for providing blocks.
 type BlocksProvider interface {
 	// Block returns the block with the given ID.
@@ -53,8 +59,8 @@ type TransactionReceiptsProvider interface {
 	TransactionReceipt(ctx context.Context, hash []byte) (*spec.TransactionReceipt, error)
 }
 
-// BlockReplaysProvider is the interface for providing block replays.
-type BlockReplaysProvider interface {
-	// ReplayBlockTransactions obtains traces for all transactions in a block.
-	ReplayBlockTransactions(ctx context.Context, blockID string) ([]*api.TransactionResult, error)
+// SyncingProvider is the interface for providing syncing information.
+type SyncingProvider interface {
+	// Syncing obtains information about the sync state of the node.
+	Syncing(ctx context.Context) (*api.SyncState, error)
 }

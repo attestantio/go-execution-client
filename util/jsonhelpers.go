@@ -49,6 +49,14 @@ func MarshalUint32(input uint32) string {
 	return fmt.Sprintf("0x%s", strings.TrimPrefix(fmt.Sprintf("%x", input), "0"))
 }
 
+// MarshalNullableUint32 marshals a uint32 as per the Ethereum standard, with 0 as null.
+func MarshalNullableUint32(input uint32) string {
+	if input == 0 {
+		return ""
+	}
+	return fmt.Sprintf("0x%s", strings.TrimPrefix(fmt.Sprintf("%x", input), "0"))
+}
+
 // MarshalBigInt marshals a big.Int as per the Ethereum standard.
 func MarshalBigInt(input *big.Int) string {
 	if input == nil || input.Cmp(zero) == 0 {
