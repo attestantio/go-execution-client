@@ -36,6 +36,9 @@ type Service struct {
 	address string
 	client  jsonrpc.RPCClient
 	timeout time.Duration
+
+	// Client capability information.
+	isIssuanceProvider bool
 }
 
 // log is a service-wide logger.
@@ -88,10 +91,10 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 		return nil, errors.Wrap(err, "failed to confirm node connection")
 	}
 
-	//	// Handle flags for API versioning.
-	//	if err := s.checkAPIVersioning(ctx); err != nil {
-	//		return nil, errors.Wrap(err, "failed to check API versioning")
-	//	}
+	// Handle flags for capabilities.
+	if err := s.checkCapabilities(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to check capabilities")
+	}
 
 	// Close the service on context done.
 	go func(s *Service) {
@@ -113,24 +116,13 @@ func (s *Service) fetchStaticValues(ctx context.Context) error {
 	return nil
 }
 
-// // checkAPIVersioning checks the versions of some APIs and sets
-// // internal flags appropriately.
-// func (s *Service) checkAPIVersioning(ctx context.Context) error {
-// 	// Start by setting the API v2 flag for blocks and fetching block 0.
-// 	s.supportsV2BeaconBlocks = true
-// 	_, err := s.SignedBeaconBlock(ctx, "0")
-// 	if err == nil {
-// 		// It's good.  Assume that other V2 APIs introduced with Altair
-// 		// are present.
-// 		s.supportsV2BeaconState = true
-// 		s.supportsV2ValidatorBlocks = true
-// 	} else {
-// 		// Assume this is down to the V2 endpoint missing rather than
-// 		// some other failure.
-// 		s.supportsV2BeaconBlocks = false
-// 	}
-// 	return nil
-// }
+// checkCapabilites checks the capabilities of the client and sets
+// internal flags appropriately.
+func (s *Service) checkCapabilities(ctx context.Context) error {
+	_, err := s.Issuance(ctx, "0")
+	s.isIssuanceProvider = err == nil
+	return nil
+}
 
 // Name provides the name of the service.
 func (s *Service) Name() string {
@@ -144,4 +136,9 @@ func (s *Service) Address() string {
 
 // close closes the service, freeing up resources.
 func (s *Service) close() {
+}
+
+// IsIssuanceProvider reports if the service can provide issuance.
+func (s *Service) IsIssuanceProvider() bool {
+	return s.isIssuanceProvider
 }

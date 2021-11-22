@@ -24,6 +24,7 @@ import (
 
 // TransactionStateDiff contains the changes made to a balance as a result of a transaction.
 type TransactionStateDiff struct {
+	Output  []byte
 	Balance *TransactionStateChange
 	Nonce   *TransactionStateChange
 	Storage map[string]*TransactionStorageChange

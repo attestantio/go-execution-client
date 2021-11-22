@@ -27,6 +27,9 @@ type Service interface {
 
 	// Address returns the address of the client.
 	Address() string
+
+	// IsIssuanceProvider reports if the service can provide issuance.
+	IsIssuanceProvider() bool
 }
 
 // BlockReplaysProvider is the interface for providing block replays.
@@ -45,6 +48,12 @@ type BlocksProvider interface {
 type ChainHeightProvider interface {
 	// ChainHeight returns the height of the chain as understood by the node.
 	ChainHeight(ctx context.Context) (uint32, error)
+}
+
+// IssuanceProvider is the interface for providing issuance.
+type IssuanceProvider interface {
+	// Issuance returns the issuance of a block.
+	Issuance(ctx context.Context, blockID string) (*api.Issuance, error)
 }
 
 // NetworkIDProvider is the interface for providing the network ID.
