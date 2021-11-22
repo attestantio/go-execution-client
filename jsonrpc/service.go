@@ -119,7 +119,7 @@ func (s *Service) fetchStaticValues(ctx context.Context) error {
 // checkCapabilites checks the capabilities of the client and sets
 // internal flags appropriately.
 func (s *Service) checkCapabilities(ctx context.Context) error {
-	_, err := s.Issuance(ctx, "0")
+	_, err := s.issuanceAtHeight(ctx, 1)
 	s.isIssuanceProvider = err == nil
 	return nil
 }
@@ -136,9 +136,4 @@ func (s *Service) Address() string {
 
 // close closes the service, freeing up resources.
 func (s *Service) close() {
-}
-
-// IsIssuanceProvider reports if the service can provide issuance.
-func (s *Service) IsIssuanceProvider() bool {
-	return s.isIssuanceProvider
 }

@@ -27,9 +27,6 @@ type Service interface {
 
 	// Address returns the address of the client.
 	Address() string
-
-	// IsIssuanceProvider reports if the service can provide issuance.
-	IsIssuanceProvider() bool
 }
 
 // BlockReplaysProvider is the interface for providing block replays.
