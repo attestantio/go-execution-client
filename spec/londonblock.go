@@ -32,22 +32,22 @@ type LondonBlock struct {
 	ExtraData        []byte
 	GasLimit         uint32
 	GasUsed          uint32
-	Hash             []byte
+	Hash             Hash
 	LogsBloom        []byte
-	Miner            []byte
-	MixHash          []byte
+	Miner            Address
+	MixHash          Hash
 	Nonce            []byte
 	Number           uint32
-	ParentHash       []byte
-	ReceiptsRoot     []byte
+	ParentHash       Hash
+	ReceiptsRoot     Root
 	SHA3Uncles       []byte
 	Size             uint32
-	StateRoot        []byte
+	StateRoot        Root
 	Timestamp        time.Time
 	TotalDifficulty  *big.Int
 	Transactions     []Transaction
-	TransactionsRoot []byte
-	Uncles           [][]byte
+	TransactionsRoot Root
+	Uncles           []Hash
 }
 
 // londonBlockJSON is the spec representation of the struct.
@@ -93,21 +93,21 @@ func (b *LondonBlock) MarshalJSON() ([]byte, error) {
 		ExtraData:        util.MarshalByteArray(b.ExtraData),
 		GasLimit:         util.MarshalUint32(b.GasLimit),
 		GasUsed:          util.MarshalUint32(b.GasUsed),
-		Hash:             util.MarshalByteArray(b.Hash),
+		Hash:             util.MarshalByteArray(b.Hash[:]),
 		LogsBloom:        util.MarshalByteArray(b.LogsBloom),
-		Miner:            util.MarshalByteArray(b.Miner),
-		MixHash:          util.MarshalByteArray(b.MixHash),
+		Miner:            util.MarshalByteArray(b.Miner[:]),
+		MixHash:          util.MarshalByteArray(b.MixHash[:]),
 		Nonce:            util.MarshalByteArray(b.Nonce),
 		Number:           util.MarshalUint32(b.Number),
-		ParentHash:       util.MarshalByteArray(b.ParentHash),
-		ReceiptsRoot:     util.MarshalByteArray(b.ReceiptsRoot),
+		ParentHash:       util.MarshalByteArray(b.ParentHash[:]),
+		ReceiptsRoot:     util.MarshalByteArray(b.ReceiptsRoot[:]),
 		SHA3Uncles:       util.MarshalByteArray(b.SHA3Uncles),
 		Size:             util.MarshalUint32(b.Size),
-		StateRoot:        util.MarshalByteArray(b.StateRoot),
+		StateRoot:        util.MarshalByteArray(b.StateRoot[:]),
 		Timestamp:        fmt.Sprintf("%#x", b.Timestamp.Unix()),
 		TotalDifficulty:  util.MarshalBigInt(b.TotalDifficulty),
 		Transactions:     transactions,
-		TransactionsRoot: util.MarshalByteArray(b.TransactionsRoot),
+		TransactionsRoot: util.MarshalByteArray(b.TransactionsRoot[:]),
 		Uncles:           uncles,
 	})
 }
@@ -168,10 +168,11 @@ func (b *LondonBlock) UnmarshalJSON(input []byte) error {
 	if data.Hash == "" {
 		return errors.New("hash missing")
 	}
-	b.Hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.Hash))
+	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.Hash))
 	if err != nil {
 		return errors.Wrap(err, "hash invalid")
 	}
+	copy(b.Hash[:], hash)
 
 	if data.LogsBloom == "" {
 		return errors.New("logs bloom missing")
@@ -184,18 +185,20 @@ func (b *LondonBlock) UnmarshalJSON(input []byte) error {
 	if data.Miner == "" {
 		return errors.New("miner missing")
 	}
-	b.Miner, err = hex.DecodeString(util.PreUnmarshalHexString(data.Miner))
+	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.Miner))
 	if err != nil {
 		return errors.Wrap(err, "miner invalid")
 	}
+	copy(b.Miner[:], address)
 
 	if data.MixHash == "" {
 		return errors.New("mix hash missing")
 	}
-	b.MixHash, err = hex.DecodeString(util.PreUnmarshalHexString(data.MixHash))
+	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.MixHash))
 	if err != nil {
 		return errors.Wrap(err, "mix hash invalid")
 	}
+	copy(b.MixHash[:], hash)
 
 	if data.Nonce == "" {
 		return errors.New("nonce missing")
@@ -217,18 +220,20 @@ func (b *LondonBlock) UnmarshalJSON(input []byte) error {
 	if data.ParentHash == "" {
 		return errors.New("parent hash missing")
 	}
-	b.ParentHash, err = hex.DecodeString(util.PreUnmarshalHexString(data.ParentHash))
+	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.ParentHash))
 	if err != nil {
 		return errors.Wrap(err, "parent hash invalid")
 	}
+	copy(b.ParentHash[:], hash)
 
 	if data.ReceiptsRoot == "" {
 		return errors.New("receipts root missing")
 	}
-	b.ReceiptsRoot, err = hex.DecodeString(util.PreUnmarshalHexString(data.ReceiptsRoot))
+	root, err := hex.DecodeString(util.PreUnmarshalHexString(data.ReceiptsRoot))
 	if err != nil {
 		return errors.Wrap(err, "receipts root invalid")
 	}
+	copy(b.ReceiptsRoot[:], root)
 
 	if data.SHA3Uncles == "" {
 		return errors.New("sha3 uncles missing")
@@ -250,10 +255,11 @@ func (b *LondonBlock) UnmarshalJSON(input []byte) error {
 	if data.StateRoot == "" {
 		return errors.New("state root missing")
 	}
-	b.StateRoot, err = hex.DecodeString(util.PreUnmarshalHexString(data.StateRoot))
+	root, err = hex.DecodeString(util.PreUnmarshalHexString(data.StateRoot))
 	if err != nil {
 		return errors.Wrap(err, "state root invalid")
 	}
+	copy(b.StateRoot[:], root)
 
 	if data.Timestamp == "" {
 		return errors.New("timestamp missing")
@@ -288,21 +294,22 @@ func (b *LondonBlock) UnmarshalJSON(input []byte) error {
 	if data.TransactionsRoot == "" {
 		return errors.New("transactions root missing")
 	}
-	b.TransactionsRoot, err = hex.DecodeString(util.PreUnmarshalHexString(data.TransactionsRoot))
+	root, err = hex.DecodeString(util.PreUnmarshalHexString(data.TransactionsRoot))
 	if err != nil {
 		return errors.Wrap(err, "transactions root invalid")
 	}
+	copy(b.TransactionsRoot[:], root)
 
-	b.Uncles = make([][]byte, 0, len(data.Uncles))
-	for _, uncleStr := range data.Uncles {
+	b.Uncles = make([]Hash, len(data.Uncles))
+	for i, uncleStr := range data.Uncles {
 		if uncleStr == "" {
 			return errors.New("uncle invalid")
 		}
-		uncle, err := hex.DecodeString(util.PreUnmarshalHexString(uncleStr))
+		hash, err := hex.DecodeString(util.PreUnmarshalHexString(uncleStr))
 		if err != nil {
 			return errors.Wrap(err, "uncle invalid")
 		}
-		b.Uncles = append(b.Uncles, uncle)
+		copy(b.Uncles[i][:], hash)
 	}
 
 	return nil

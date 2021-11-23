@@ -14,6 +14,7 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"strings"
@@ -69,6 +70,21 @@ func MarshalBigInt(input *big.Int) string {
 func MarshalByteArray(input []byte) string {
 	if len(input) == 0 {
 		return "0x"
+	}
+	return fmt.Sprintf("%#x", input)
+}
+
+var zeroAddress = []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+
+// MarshalAddress marshals an address as per the Ethereum standard.
+func MarshalAddress(input []byte) string {
+	return fmt.Sprintf("%#x", input)
+}
+
+// MarshalNullableAddress marshals an address as per the Ethereum standard.
+func MarshalNullableAddress(input []byte) string {
+	if bytes.Equal(input, zeroAddress) {
+		return ""
 	}
 	return fmt.Sprintf("%#x", input)
 }

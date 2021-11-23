@@ -27,17 +27,17 @@ import (
 
 // TransactionReceipt contains a transaction receipt.
 type TransactionReceipt struct {
-	BlockHash         []byte
+	BlockHash         Hash
 	BlockNumber       uint32
-	ContractAddress   []byte
+	ContractAddress   *Address
 	CumulativeGasUsed uint32
-	From              []byte
+	From              Address
 	GasUsed           uint32
 	Logs              []*TransactionEvent
 	LogsBloom         []byte
 	Status            uint32
-	To                []byte
-	TransactionHash   []byte
+	To                *Address
+	TransactionHash   Hash
 	TransactionIndex  uint32
 	Type              uint32
 }
@@ -78,18 +78,26 @@ type transactionReceiptYAML struct {
 
 // MarshalJSON implements json.Marshaler.
 func (t *TransactionReceipt) MarshalJSON() ([]byte, error) {
+	contractAddress := ""
+	if t.ContractAddress != nil {
+		contractAddress = util.MarshalNullableAddress((*t.ContractAddress)[:])
+	}
+	to := ""
+	if t.To != nil {
+		to = util.MarshalNullableAddress(t.To[:])
+	}
 	return json.Marshal(&transactionReceiptJSON{
-		BlockHash:         util.MarshalByteArray(t.BlockHash),
+		BlockHash:         util.MarshalByteArray(t.BlockHash[:]),
 		BlockNumber:       util.MarshalUint32(t.BlockNumber),
-		ContractAddress:   util.MarshalNullableByteArray(t.ContractAddress),
+		ContractAddress:   contractAddress,
 		CumulativeGasUsed: util.MarshalUint32(t.CumulativeGasUsed),
-		From:              util.MarshalByteArray(t.From),
+		From:              util.MarshalByteArray(t.From[:]),
 		GasUsed:           util.MarshalUint32(t.GasUsed),
 		Logs:              t.Logs,
 		LogsBloom:         util.MarshalByteArray(t.LogsBloom),
 		Status:            util.MarshalUint32(t.Status),
-		To:                util.MarshalByteArray(t.To),
-		TransactionHash:   util.MarshalByteArray(t.TransactionHash),
+		To:                to,
+		TransactionHash:   util.MarshalByteArray(t.TransactionHash[:]),
 		TransactionIndex:  util.MarshalUint32(t.TransactionIndex),
 		Type:              util.MarshalUint32(t.Type),
 	})
@@ -111,10 +119,11 @@ func (t *TransactionReceipt) unpack(data *transactionReceiptJSON) error {
 	if data.BlockHash == "" {
 		return errors.New("block hash missing")
 	}
-	t.BlockHash, err = hex.DecodeString(util.PreUnmarshalHexString(data.BlockHash))
+	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.BlockHash))
 	if err != nil {
 		return errors.Wrap(err, "block hash invalid")
 	}
+	copy(t.BlockHash[:], hash)
 
 	if data.BlockNumber == "" {
 		return errors.New("block number missing")
@@ -125,12 +134,14 @@ func (t *TransactionReceipt) unpack(data *transactionReceiptJSON) error {
 	}
 	t.BlockNumber = uint32(tmp)
 
-	t.ContractAddress, err = hex.DecodeString(util.PreUnmarshalHexString(data.ContractAddress))
-	if err != nil {
-		return errors.Wrap(err, "contract address invalid")
-	}
-	if len(t.ContractAddress) == 0 {
-		t.ContractAddress = nil
+	if data.ContractAddress != "" {
+		address, err := hex.DecodeString(util.PreUnmarshalHexString(data.ContractAddress))
+		if err != nil {
+			return errors.Wrap(err, "contract address invalid")
+		}
+		var contractAddress Address
+		copy(contractAddress[:], address)
+		t.ContractAddress = &contractAddress
 	}
 
 	if data.CumulativeGasUsed == "" {
@@ -145,10 +156,11 @@ func (t *TransactionReceipt) unpack(data *transactionReceiptJSON) error {
 	if data.From == "" {
 		return errors.New("from missing")
 	}
-	t.From, err = hex.DecodeString(util.PreUnmarshalHexString(data.From))
+	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.From))
 	if err != nil {
 		return errors.Wrap(err, "from invalid")
 	}
+	copy(t.From[:], address)
 
 	if data.GasUsed == "" {
 		return errors.New("gas used missing")
@@ -178,18 +190,24 @@ func (t *TransactionReceipt) unpack(data *transactionReceiptJSON) error {
 	}
 	t.Status = uint32(tmp)
 
-	t.To, err = hex.DecodeString(util.PreUnmarshalHexString(data.To))
-	if err != nil {
-		return errors.Wrap(err, "to invalid")
+	if data.To != "" {
+		address, err = hex.DecodeString(util.PreUnmarshalHexString(data.To))
+		if err != nil {
+			return errors.Wrap(err, "to invalid")
+		}
+		var to Address
+		copy(to[:], address)
+		t.To = &to
 	}
 
 	if data.TransactionHash == "" {
 		return errors.New("transaction hash missing")
 	}
-	t.TransactionHash, err = hex.DecodeString(util.PreUnmarshalHexString(data.TransactionHash))
+	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.TransactionHash))
 	if err != nil {
 		return errors.Wrap(err, "transaction hash invalid")
 	}
+	copy(t.TransactionHash[:], hash)
 
 	if data.TransactionIndex == "" {
 		return errors.New("transaction index missing")
@@ -214,17 +232,25 @@ func (t *TransactionReceipt) unpack(data *transactionReceiptJSON) error {
 
 // MarshalYAML implements yaml.Marshaler.
 func (t *TransactionReceipt) MarshalYAML() ([]byte, error) {
+	contractAddress := ""
+	if t.ContractAddress != nil {
+		contractAddress = util.MarshalNullableAddress((*t.ContractAddress)[:])
+	}
+	to := ""
+	if t.To != nil {
+		to = util.MarshalNullableAddress(t.To[:])
+	}
 	yamlBytes, err := yaml.MarshalWithOptions(&transactionReceiptYAML{
 		BlockHash:         fmt.Sprintf("%#x", t.BlockHash),
 		BlockNumber:       t.BlockNumber,
-		ContractAddress:   fmt.Sprintf("%#x", t.ContractAddress),
+		ContractAddress:   contractAddress,
 		CumulativeGasUsed: t.CumulativeGasUsed,
 		From:              fmt.Sprintf("%#x", t.From),
 		GasUsed:           t.GasUsed,
 		Logs:              t.Logs,
 		LogsBloom:         fmt.Sprintf("%#x", t.LogsBloom),
 		Status:            t.Status,
-		To:                fmt.Sprintf("%#x", t.To),
+		To:                to,
 		TransactionHash:   fmt.Sprintf("%#x", t.TransactionHash),
 		TransactionIndex:  t.TransactionIndex,
 		Type:              t.Type,

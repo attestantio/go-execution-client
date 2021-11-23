@@ -30,20 +30,20 @@ import (
 // also known as an EIP-1559 transaction.
 type Type2Transaction struct {
 	AccessList           []*AccessListEntry
-	BlockHash            []byte
+	BlockHash            Hash
 	BlockNumber          uint32
 	ChainID              uint64
-	From                 []byte
+	From                 Address
 	Gas                  uint32
 	GasPrice             uint64
-	Hash                 []byte
+	Hash                 Hash
 	Input                []byte
 	MaxFeePerGas         uint64
 	MaxPriorityFeePerGas uint64
 	Nonce                uint64
 	R                    *big.Int
 	S                    *big.Int
-	To                   []byte
+	To                   *Address
 	TransactionIndex     *big.Int
 	V                    *big.Int
 	Value                *big.Int
@@ -97,22 +97,26 @@ type type2TransactionYAML struct {
 
 // MarshalJSON implements json.Marshaler.
 func (t *Type2Transaction) MarshalJSON() ([]byte, error) {
+	to := ""
+	if t.To != nil {
+		to = util.MarshalByteArray(t.To[:])
+	}
 	return json.Marshal(&type2TransactionJSON{
 		AccessList:           t.AccessList,
-		BlockHash:            util.MarshalByteArray(t.BlockHash),
+		BlockHash:            util.MarshalByteArray(t.BlockHash[:]),
 		BlockNumber:          util.MarshalUint32(t.BlockNumber),
 		ChainID:              util.MarshalUint64(t.ChainID),
-		From:                 util.MarshalByteArray(t.From),
+		From:                 util.MarshalByteArray(t.From[:]),
 		Gas:                  util.MarshalUint32(t.Gas),
 		GasPrice:             util.MarshalUint64(t.GasPrice),
-		Hash:                 util.MarshalByteArray(t.Hash),
+		Hash:                 util.MarshalByteArray(t.Hash[:]),
 		Input:                util.MarshalByteArray(t.Input),
 		MaxFeePerGas:         util.MarshalUint64(t.MaxFeePerGas),
 		MaxPriorityFeePerGas: util.MarshalUint64(t.MaxPriorityFeePerGas),
 		Nonce:                util.MarshalUint64(t.Nonce),
 		R:                    util.MarshalBigInt(t.R),
 		S:                    util.MarshalBigInt(t.S),
-		To:                   util.MarshalByteArray(t.To),
+		To:                   to,
 		Type:                 "0x2",
 		TransactionIndex:     util.MarshalBigInt(t.TransactionIndex),
 		V:                    util.MarshalBigInt(t.V),
@@ -143,10 +147,11 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 	if data.BlockHash == "" {
 		return errors.New("block hash missing")
 	}
-	t.BlockHash, err = hex.DecodeString(util.PreUnmarshalHexString(data.BlockHash))
+	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.BlockHash))
 	if err != nil {
 		return errors.Wrap(err, "block hash invalid")
 	}
+	copy(t.BlockHash[:], hash)
 
 	if data.BlockNumber == "" {
 		return errors.New("block number missing")
@@ -168,10 +173,11 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 	if data.From == "" {
 		return errors.New("from missing")
 	}
-	t.From, err = hex.DecodeString(util.PreUnmarshalHexString(data.From))
+	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.From))
 	if err != nil {
 		return errors.Wrap(err, "from invalid")
 	}
+	copy(t.From[:], address)
 
 	if data.Gas == "" {
 		return errors.New("gas missing")
@@ -193,10 +199,11 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 	if data.Hash == "" {
 		return errors.New("hash missing")
 	}
-	t.Hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.Hash))
+	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.Hash))
 	if err != nil {
 		return errors.Wrap(err, "hash invalid")
 	}
+	copy(t.Hash[:], hash)
 
 	t.Input, err = hex.DecodeString(util.PreUnmarshalHexString(data.Input))
 	if err != nil {
@@ -227,9 +234,14 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 		return errors.Wrap(err, "nonce invalid")
 	}
 
-	t.To, err = hex.DecodeString(util.PreUnmarshalHexString(data.To))
-	if err != nil {
-		return errors.Wrap(err, "to invalid")
+	if data.To != "" {
+		address, err = hex.DecodeString(util.PreUnmarshalHexString(data.To))
+		if err != nil {
+			return errors.Wrap(err, "to invalid")
+		}
+		var to Address
+		copy(to[:], address)
+		t.To = &to
 	}
 
 	if data.TransactionIndex == "" {
@@ -277,6 +289,10 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 
 // MarshalYAML implements yaml.Marshaler.
 func (t *Type2Transaction) MarshalYAML() ([]byte, error) {
+	to := ""
+	if t.To != nil {
+		to = util.MarshalByteArray(t.To[:])
+	}
 	yamlBytes, err := yaml.MarshalWithOptions(&type2TransactionYAML{
 		AccessList:           t.AccessList,
 		BlockHash:            fmt.Sprintf("%#x", t.BlockHash),
@@ -292,7 +308,7 @@ func (t *Type2Transaction) MarshalYAML() ([]byte, error) {
 		MaxPriorityFeePerGas: t.MaxPriorityFeePerGas,
 		R:                    t.R,
 		S:                    t.S,
-		To:                   fmt.Sprintf("%#x", t.To),
+		To:                   to,
 		Type:                 2,
 		TransactionIndex:     t.TransactionIndex,
 		V:                    t.V,

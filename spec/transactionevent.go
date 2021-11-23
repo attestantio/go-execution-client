@@ -27,14 +27,14 @@ import (
 
 // TransactionEvent contains a transaction event.
 type TransactionEvent struct {
-	Address          []byte
-	BlockHash        []byte
+	Address          Address
+	BlockHash        Hash
 	BlockNumber      uint32
 	Data             []byte
 	Index            uint32
 	Removed          bool
-	Topics           [][]byte
-	TransactionHash  []byte
+	Topics           []Hash
+	TransactionHash  Hash
 	TransactionIndex uint32
 }
 
@@ -68,18 +68,18 @@ type transactionEventYAML struct {
 func (t *TransactionEvent) MarshalJSON() ([]byte, error) {
 	topics := make([]string, 0, len(t.Topics))
 	for _, topic := range t.Topics {
-		topics = append(topics, util.MarshalByteArray(topic))
+		topics = append(topics, util.MarshalByteArray(topic[:]))
 	}
 
 	return json.Marshal(&transactionEventJSON{
-		Address:          util.MarshalByteArray(t.Address),
-		BlockHash:        util.MarshalByteArray(t.BlockHash),
+		Address:          util.MarshalAddress(t.Address[:]),
+		BlockHash:        util.MarshalByteArray(t.BlockHash[:]),
 		BlockNumber:      util.MarshalUint32(t.BlockNumber),
 		Data:             util.MarshalByteArray(t.Data),
 		Index:            util.MarshalUint32(t.Index),
 		Removed:          t.Removed,
 		Topics:           topics,
-		TransactionHash:  util.MarshalByteArray(t.TransactionHash),
+		TransactionHash:  util.MarshalByteArray(t.TransactionHash[:]),
 		TransactionIndex: util.MarshalUint32(t.TransactionIndex),
 	})
 }
@@ -100,18 +100,20 @@ func (t *TransactionEvent) unpack(data *transactionEventJSON) error {
 	if data.Address == "" {
 		return errors.New("address missing")
 	}
-	t.Address, err = hex.DecodeString(util.PreUnmarshalHexString(data.Address))
+	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.Address))
 	if err != nil {
 		return errors.Wrap(err, "address invalid")
 	}
+	copy(t.Address[:], address)
 
 	if data.BlockHash == "" {
 		return errors.New("block hash missing")
 	}
-	t.BlockHash, err = hex.DecodeString(util.PreUnmarshalHexString(data.BlockHash))
+	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.BlockHash))
 	if err != nil {
 		return errors.Wrap(err, "block hash invalid")
 	}
+	copy(t.BlockHash[:], hash)
 
 	if data.BlockNumber == "" {
 		return errors.New("block number missing")
@@ -144,23 +146,24 @@ func (t *TransactionEvent) unpack(data *transactionEventJSON) error {
 
 	t.Removed = data.Removed
 
-	topics := make([][]byte, 0, len(t.Topics))
-	for _, topic := range data.Topics {
-		tmp, err := hex.DecodeString(util.PreUnmarshalHexString(topic))
+	topics := make([]Hash, len(data.Topics))
+	for i, topic := range data.Topics {
+		hash, err := hex.DecodeString(util.PreUnmarshalHexString(topic))
 		if err != nil {
 			return errors.Wrap(err, "topic invalid")
 		}
-		topics = append(topics, tmp)
+		copy(topics[i][:], hash)
 	}
 	t.Topics = topics
 
 	if data.TransactionHash == "" {
 		return errors.New("transaction hash missing")
 	}
-	t.TransactionHash, err = hex.DecodeString(util.PreUnmarshalHexString(data.TransactionHash))
+	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.TransactionHash))
 	if err != nil {
 		return errors.Wrap(err, "transaction hash invalid")
 	}
+	copy(t.TransactionHash[:], hash)
 
 	if data.TransactionIndex == "" {
 		return errors.New("transaction index missing")
