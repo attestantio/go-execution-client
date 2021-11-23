@@ -175,7 +175,7 @@ func TestType0TransactionJSON(t *testing.T) {
 		{
 			name:  "TransactionIndexInvalid",
 			input: []byte(`{"blockHash":"0x52d17ecd8dc98f16b97af3ab9e8d0aa07118b7beccb74dedd57c76b41b02c9a1","blockNumber":"0xcf635b","from":"0x5c9261660637d09fde3f0d209b8acb79cf3e5124","gas":"0x5208","gasPrice":"0x735c01ab4d","hash":"0xad4dcbc47172e012d40dddb05833805e52e6d2573db07e6ce3b4a07389be37b1","input":"0x","nonce":"0x1","to":"0x2faf487a4414fe77e2327f0bf4ae2a264a776ad2","transactionIndex":"true","type":"0x0","value":"0x163c900f23774c0","v":"0x26","r":"0xc5073b102212f0285a7b0eb4b4bb402dd39f43b48f064499b58b71cd83ef9251","s":"0x525631949ac04b22f7ec255ad08c0f6439d15ea8f3520b32680417c9bad3878e"}`),
-			err:   "transaction index invalid",
+			err:   "transaction index invalid: strconv.ParseUint: parsing \"true\": invalid syntax",
 		},
 		{
 			name:  "ValueMissing",

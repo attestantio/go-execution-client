@@ -44,7 +44,7 @@ type Type2Transaction struct {
 	R                    *big.Int
 	S                    *big.Int
 	To                   *Address
-	TransactionIndex     *big.Int
+	TransactionIndex     uint32
 	V                    *big.Int
 	Value                *big.Int
 }
@@ -89,7 +89,7 @@ type type2TransactionYAML struct {
 	R                    *big.Int           `yaml:"r"`
 	S                    *big.Int           `yaml:"s"`
 	To                   string             `yaml:"to"`
-	TransactionIndex     *big.Int           `yaml:"transactionIndex"`
+	TransactionIndex     uint32             `yaml:"transactionIndex"`
 	Type                 uint32             `yaml:"type"`
 	V                    *big.Int           `yaml:"v"`
 	Value                *big.Int           `yaml:"value"`
@@ -118,7 +118,7 @@ func (t *Type2Transaction) MarshalJSON() ([]byte, error) {
 		S:                    util.MarshalBigInt(t.S),
 		To:                   to,
 		Type:                 "0x2",
-		TransactionIndex:     util.MarshalBigInt(t.TransactionIndex),
+		TransactionIndex:     util.MarshalUint32(t.TransactionIndex),
 		V:                    util.MarshalBigInt(t.V),
 		Value:                util.MarshalBigInt(t.Value),
 	})
@@ -247,10 +247,11 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 	if data.TransactionIndex == "" {
 		return errors.New("transaction index missing")
 	}
-	t.TransactionIndex, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.TransactionIndex), 16)
-	if !success {
-		return errors.New("transaction index invalid")
+	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.TransactionIndex), 16, 32)
+	if err != nil {
+		return errors.Wrap(err, "transaction index invalid")
 	}
+	t.TransactionIndex = uint32(tmp)
 
 	if data.Value == "" {
 		return errors.New("value missing")
@@ -342,4 +343,19 @@ func (t *Type2Transaction) String() string {
 // Type returns the type of this transaction.
 func (t *Type2Transaction) Type() uint64 {
 	return 2
+}
+
+// BlockHeight returns the block height of the transaction.
+func (t *Type2Transaction) BlockHeight() uint32 {
+	return t.BlockNumber
+}
+
+// TxHash returns the hash of the transaction.
+func (t *Type2Transaction) TxHash() Hash {
+	return t.Hash
+}
+
+// TxIndex returns the index of the transaction in its block.
+func (t *Type2Transaction) TxIndex() uint32 {
+	return t.TransactionIndex
 }

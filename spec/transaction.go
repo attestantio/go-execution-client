@@ -24,6 +24,15 @@ import (
 type Transaction interface {
 	// Type returns the transaction type.
 	Type() uint64
+
+	// BlockHeight returns the block height of the transaction.
+	BlockHeight() uint32
+
+	// TxHash returns the hash of the transaction.
+	TxHash() Hash
+
+	// TxIndex returns the index of the transaction in its block.
+	TxIndex() uint32
 }
 
 type transactionTypeJSON struct {
