@@ -15,9 +15,12 @@ package api
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/attestantio/go-execution-client/spec"
 	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 )
@@ -27,7 +30,7 @@ type TransactionStateDiff struct {
 	Output  []byte
 	Balance *TransactionStateChange
 	Nonce   *TransactionStateChange
-	Storage map[string]*TransactionStorageChange
+	Storage map[spec.Hash]*TransactionStorageChange
 }
 
 // transactionStateDiffJSON is the spec representation of the struct.
@@ -73,7 +76,7 @@ func (t *TransactionStateDiff) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 		item := json.RawMessage(tmp)
-		storage[k] = &item
+		storage[fmt.Sprintf("%#x", k)] = &item
 	}
 
 	return json.Marshal(&transactionStateDiffJSON{
@@ -110,13 +113,19 @@ func (t *TransactionStateDiff) unpack(transactionStateDiffJSON *transactionState
 		t.Nonce = &stateChange
 	}
 
-	storage := make(map[string]*TransactionStorageChange)
+	storage := make(map[spec.Hash]*TransactionStorageChange)
 	for k, v := range transactionStateDiffJSON.Storage {
 		var stateChange TransactionStorageChange
 		if err := json.Unmarshal([]byte(*v), &stateChange); err != nil {
 			return errors.Wrap(err, "invalid storage JSON")
 		}
-		storage[k] = &stateChange
+		hash, err := hex.DecodeString(strings.TrimPrefix(k, "0x"))
+		if err != nil {
+			return err
+		}
+		var key spec.Hash
+		copy(key[:], hash)
+		storage[key] = &stateChange
 	}
 	t.Storage = storage
 
@@ -125,10 +134,15 @@ func (t *TransactionStateDiff) unpack(transactionStateDiffJSON *transactionState
 
 // MarshalYAML implements yaml.Marshaler.
 func (t *TransactionStateDiff) MarshalYAML() ([]byte, error) {
+	storage := make(map[string]*TransactionStorageChange)
+	for k, v := range t.Storage {
+		storage[fmt.Sprintf("%#x", k)] = v
+	}
+
 	yamlBytes, err := yaml.MarshalWithOptions(&transactionStateDiffYAML{
 		Balance: t.Balance,
 		Nonce:   t.Nonce,
-		Storage: t.Storage,
+		Storage: storage,
 	}, yaml.Flow(true))
 	if err != nil {
 		return nil, err

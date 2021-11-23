@@ -18,7 +18,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/attestantio/go-execution-client/spec"
 	"github.com/attestantio/go-execution-client/util"
 	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
@@ -27,7 +29,7 @@ import (
 // TransactionResult contains the result of a transaction.
 type TransactionResult struct {
 	Output          []byte
-	StateDiff       map[string]*TransactionStateDiff
+	StateDiff       map[spec.Address]*TransactionStateDiff
 	TransactionHash []byte
 }
 
@@ -47,9 +49,13 @@ type transactionResultYAML struct {
 
 // MarshalJSON implements json.Marshaler.
 func (t *TransactionResult) MarshalJSON() ([]byte, error) {
+	stateDiff := make(map[string]*TransactionStateDiff)
+	for k, v := range t.StateDiff {
+		stateDiff[util.MarshalAddress(k[:])] = v
+	}
 	return json.Marshal(&transactionResultJSON{
 		Output:          fmt.Sprintf("%#x", t.Output),
-		StateDiff:       t.StateDiff,
+		StateDiff:       stateDiff,
 		TransactionHash: fmt.Sprintf("%#x", t.TransactionHash),
 	})
 }
@@ -74,7 +80,17 @@ func (t *TransactionResult) unpack(transactionResultJSON *transactionResultJSON)
 		}
 	}
 
-	t.StateDiff = transactionResultJSON.StateDiff
+	stateDiff := make(map[spec.Address]*TransactionStateDiff)
+	for k, v := range transactionResultJSON.StateDiff {
+		address, err := hex.DecodeString(strings.TrimPrefix(k, "0x"))
+		if err != nil {
+			return err
+		}
+		var key spec.Address
+		copy(key[:], address)
+		stateDiff[key] = v
+	}
+	t.StateDiff = stateDiff
 
 	if transactionResultJSON.TransactionHash == "" {
 		return errors.New("transaction hash missing")
@@ -89,9 +105,13 @@ func (t *TransactionResult) unpack(transactionResultJSON *transactionResultJSON)
 
 // MarshalYAML implements yaml.Marshaler.
 func (t *TransactionResult) MarshalYAML() ([]byte, error) {
+	stateDiff := make(map[string]*TransactionStateDiff)
+	for k, v := range t.StateDiff {
+		stateDiff[util.MarshalAddress(k[:])] = v
+	}
 	yamlBytes, err := yaml.MarshalWithOptions(&transactionResultYAML{
 		Output:          fmt.Sprintf("%#x", t.Output),
-		StateDiff:       t.StateDiff,
+		StateDiff:       stateDiff,
 		TransactionHash: fmt.Sprintf("%#x", t.TransactionHash),
 	}, yaml.Flow(true))
 	if err != nil {
