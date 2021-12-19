@@ -15,22 +15,23 @@ package jsonrpc
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/attestantio/go-execution-client/api"
 	"github.com/attestantio/go-execution-client/spec"
 	"github.com/pkg/errors"
 )
 
-// TransactionReceipt returns the transaction receipt for the given transaction hash.
-func (s *Service) TransactionReceipt(ctx context.Context, hash spec.Hash) (*spec.TransactionReceipt, error) {
-	if len(hash) == 0 {
-		return nil, errors.New("hash nil")
+// Events returns the events matching the filter.
+func (s *Service) Events(ctx context.Context, filter *api.EventsFilter) ([]*spec.TransactionEvent, error) {
+	if filter == nil {
+		return nil, errors.New("filter not specified")
 	}
 
-	var receipt spec.TransactionReceipt
-	if err := s.client.CallFor(&receipt, "eth_getTransactionReceipt", fmt.Sprintf("%#x", hash)); err != nil {
+	var events []*spec.TransactionEvent
+
+	if err := s.client.CallFor(&events, "eth_getLogs", []interface{}{filter}); err != nil {
 		return nil, err
 	}
 
-	return &receipt, nil
+	return events, nil
 }

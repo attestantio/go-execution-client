@@ -47,6 +47,12 @@ type ChainHeightProvider interface {
 	ChainHeight(ctx context.Context) (uint32, error)
 }
 
+// EventsProvider is the interface for providing events.
+type EventsProvider interface {
+	// Events returns the events matching the filter.
+	Events(ctx context.Context, filter *api.EventsFilter) ([]*spec.TransactionEvent, error)
+}
+
 // IssuanceProvider is the interface for providing issuance.
 type IssuanceProvider interface {
 	// Issuance returns the issuance of a block.
@@ -59,14 +65,14 @@ type NetworkIDProvider interface {
 	NetworkID(ctx context.Context) (uint64, error)
 }
 
-// TransactionReceiptsProvider is the interface for providing transaction receipts.
-type TransactionReceiptsProvider interface {
-	// TransactionReceipt returns the transaction receipt for the given transaction hash.
-	TransactionReceipt(ctx context.Context, hash []byte) (*spec.TransactionReceipt, error)
-}
-
 // SyncingProvider is the interface for providing syncing information.
 type SyncingProvider interface {
 	// Syncing obtains information about the sync state of the node.
 	Syncing(ctx context.Context) (*api.SyncState, error)
+}
+
+// TransactionReceiptsProvider is the interface for providing transaction receipts.
+type TransactionReceiptsProvider interface {
+	// TransactionReceipt returns the transaction receipt for the given transaction hash.
+	TransactionReceipt(ctx context.Context, hash spec.Hash) (*spec.TransactionReceipt, error)
 }
