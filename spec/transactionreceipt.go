@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/attestantio/go-execution-client/types"
 	"github.com/attestantio/go-execution-client/util"
 	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
@@ -27,17 +28,17 @@ import (
 
 // TransactionReceipt contains a transaction receipt.
 type TransactionReceipt struct {
-	BlockHash         Hash
+	BlockHash         types.Hash
 	BlockNumber       uint32
-	ContractAddress   *Address
+	ContractAddress   *types.Address
 	CumulativeGasUsed uint32
-	From              Address
+	From              types.Address
 	GasUsed           uint32
 	Logs              []*TransactionEvent
 	LogsBloom         []byte
 	Status            uint32
-	To                *Address
-	TransactionHash   Hash
+	To                *types.Address
+	TransactionHash   types.Hash
 	TransactionIndex  uint32
 	Type              uint32
 }
@@ -139,7 +140,7 @@ func (t *TransactionReceipt) unpack(data *transactionReceiptJSON) error {
 		if err != nil {
 			return errors.Wrap(err, "contract address invalid")
 		}
-		var contractAddress Address
+		var contractAddress types.Address
 		copy(contractAddress[:], address)
 		t.ContractAddress = &contractAddress
 	}
@@ -195,7 +196,7 @@ func (t *TransactionReceipt) unpack(data *transactionReceiptJSON) error {
 		if err != nil {
 			return errors.Wrap(err, "to invalid")
 		}
-		var to Address
+		var to types.Address
 		copy(to[:], address)
 		t.To = &to
 	}

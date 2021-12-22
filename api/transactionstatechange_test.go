@@ -38,6 +38,26 @@ func TestTransactionStateBalanceDiff(t *testing.T) {
 			err:   "invalid JSON: json: cannot unmarshal array into Go value of type api.transactionStateChangeJSON",
 		},
 		{
+			name:  "CreationInvalid",
+			input: []byte(`{"+":"true"}`),
+			err:   "creation invalid",
+		},
+		{
+			name:  "AlterationFromInvalid",
+			input: []byte(`{"*":{"from":"true","to":"0x80f8f23cd4c4c2dfb26"}}`),
+			err:   "from invalid",
+		},
+		{
+			name:  "AlterationToInvalid",
+			input: []byte(`{"*":{"from":"0x80e7999423b65619b26","to":"true"}}`),
+			err:   "to invalid",
+		},
+		{
+			name:  "DeletionInvalid",
+			input: []byte(`{"-":"true"}`),
+			err:   "deletion invalid",
+		},
+		{
 			name:  "GoodCreation",
 			input: []byte(`{"+":"0x80e7999423b65619b26"}`),
 		},
@@ -66,6 +86,7 @@ func TestTransactionStateBalanceDiff(t *testing.T) {
 				} else {
 					require.Equal(t, string(test.input), string(rt))
 				}
+				require.Equal(t, string(rt), res.String())
 			}
 		})
 	}

@@ -14,13 +14,11 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/big"
 
 	"github.com/attestantio/go-execution-client/util"
-	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 )
 
@@ -36,13 +34,6 @@ type issuanceJSON struct {
 	BlockReward string `json:"blockReward"`
 	UncleReward string `json:"uncleReward"`
 	Issuance    string `json:"issuance"`
-}
-
-// issuanceYAML is the spec representation of the struct.
-type issuanceYAML struct {
-	BlockReward *big.Int `yaml:"blockReward"`
-	UncleReward *big.Int `yaml:"uncleReward"`
-	Issuance    *big.Int `yaml:"issuance"`
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -64,64 +55,41 @@ func (i *Issuance) UnmarshalJSON(input []byte) error {
 }
 
 func (i *Issuance) unpack(data *issuanceJSON) error {
-	var success bool
+	var err error
 
 	if data.BlockReward == "" {
 		i.BlockReward = zero
 	} else {
-		i.BlockReward, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.BlockReward), 16)
-		if !success {
-			return errors.New("block reward invalid")
+		i.BlockReward, err = util.StrToBigInt("block reward", data.BlockReward)
+		if err != nil {
+			return err
 		}
 	}
 
 	if data.UncleReward == "" {
 		i.UncleReward = zero
 	} else {
-		i.UncleReward, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.UncleReward), 16)
-		if !success {
-			return errors.New("uncle reward invalid")
+		i.UncleReward, err = util.StrToBigInt("uncle reward", data.UncleReward)
+		if err != nil {
+			return err
 		}
 	}
 
 	if data.Issuance == "" {
 		i.Issuance = zero
 	} else {
-		i.Issuance, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.Issuance), 16)
-		if !success {
-			return errors.New("issuance invalid")
+		i.Issuance, err = util.StrToBigInt("issuance", data.Issuance)
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-// MarshalYAML implements yaml.Marshaler.
-func (i *Issuance) MarshalYAML() ([]byte, error) {
-	yamlBytes, err := yaml.MarshalWithOptions(&issuanceYAML{
-		BlockReward: i.BlockReward,
-		UncleReward: i.UncleReward,
-		Issuance:    i.Issuance,
-	}, yaml.Flow(true))
-	if err != nil {
-		return nil, err
-	}
-	return bytes.ReplaceAll(yamlBytes, []byte(`"`), []byte(`'`)), nil
-}
-
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (i *Issuance) UnmarshalYAML(input []byte) error {
-	// We unmarshal to the JSON struct to save on duplicate code.
-	var data issuanceJSON
-	if err := yaml.Unmarshal(input, &data); err != nil {
-		return err
-	}
-	return i.unpack(&data)
-}
-
 // String returns a string version of the structure.
 func (i *Issuance) String() string {
-	data, err := yaml.Marshal(i)
+	data, err := json.Marshal(i)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}

@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/attestantio/go-execution-client/types"
 	"github.com/attestantio/go-execution-client/util"
 	"github.com/pkg/errors"
 )
@@ -32,56 +33,51 @@ type LondonBlock struct {
 	ExtraData        []byte
 	GasLimit         uint32
 	GasUsed          uint32
-	Hash             Hash
+	Hash             types.Hash
 	LogsBloom        []byte
-	Miner            Address
-	MixHash          Hash
+	Miner            types.Address
+	MixHash          types.Hash
 	Nonce            []byte
 	Number           uint32
-	ParentHash       Hash
-	ReceiptsRoot     Root
+	ParentHash       types.Hash
+	ReceiptsRoot     types.Root
 	SHA3Uncles       []byte
 	Size             uint32
-	StateRoot        Root
+	StateRoot        types.Root
 	Timestamp        time.Time
 	TotalDifficulty  *big.Int
-	Transactions     []Transaction
-	TransactionsRoot Root
-	Uncles           []Hash
+	Transactions     []*Transaction
+	TransactionsRoot types.Root
+	Uncles           []types.Hash
 }
 
 // londonBlockJSON is the spec representation of the struct.
 type londonBlockJSON struct {
-	BaseFeePerGas    string        `json:"baseFeePerGas"`
-	Difficulty       string        `json:"difficulty"`
-	ExtraData        string        `json:"extraData"`
-	GasLimit         string        `json:"gasLimit"`
-	GasUsed          string        `json:"gasUsed"`
-	Hash             string        `json:"hash"`
-	LogsBloom        string        `json:"logsBloom"`
-	Miner            string        `json:"miner"`
-	MixHash          string        `json:"mixHash"`
-	Nonce            string        `json:"nonce"`
-	Number           string        `json:"number"`
-	ParentHash       string        `json:"parentHash"`
-	ReceiptsRoot     string        `json:"receiptsRoot"`
-	SHA3Uncles       string        `json:"sha3Uncles"`
-	Size             string        `json:"size"`
-	StateRoot        string        `json:"stateRoot"`
-	Timestamp        string        `json:"timestamp"`
-	TotalDifficulty  string        `json:"totalDifficulty"`
-	Transactions     []interface{} `json:"transactions"`
-	TransactionsRoot string        `json:"transactionsRoot"`
-	Uncles           []string      `json:"uncles"`
+	BaseFeePerGas    string         `json:"baseFeePerGas"`
+	Difficulty       string         `json:"difficulty"`
+	ExtraData        string         `json:"extraData"`
+	GasLimit         string         `json:"gasLimit"`
+	GasUsed          string         `json:"gasUsed"`
+	Hash             string         `json:"hash"`
+	LogsBloom        string         `json:"logsBloom"`
+	Miner            string         `json:"miner"`
+	MixHash          string         `json:"mixHash"`
+	Nonce            string         `json:"nonce"`
+	Number           string         `json:"number"`
+	ParentHash       string         `json:"parentHash"`
+	ReceiptsRoot     string         `json:"receiptsRoot"`
+	SHA3Uncles       string         `json:"sha3Uncles"`
+	Size             string         `json:"size"`
+	StateRoot        string         `json:"stateRoot"`
+	Timestamp        string         `json:"timestamp"`
+	TotalDifficulty  string         `json:"totalDifficulty"`
+	Transactions     []*Transaction `json:"transactions"`
+	TransactionsRoot string         `json:"transactionsRoot"`
+	Uncles           []string       `json:"uncles"`
 }
 
 // MarshalJSON implements json.Marshaler.
 func (b *LondonBlock) MarshalJSON() ([]byte, error) {
-	transactions := make([]interface{}, 0, len(b.Transactions))
-	for _, transaction := range b.Transactions {
-		transactions = append(transactions, transaction)
-	}
-
 	uncles := make([]string, 0, len(b.Uncles))
 	for _, uncle := range b.Uncles {
 		uncles = append(uncles, fmt.Sprintf("%#x", uncle))
@@ -106,7 +102,7 @@ func (b *LondonBlock) MarshalJSON() ([]byte, error) {
 		StateRoot:        util.MarshalByteArray(b.StateRoot[:]),
 		Timestamp:        fmt.Sprintf("%#x", b.Timestamp.Unix()),
 		TotalDifficulty:  util.MarshalBigInt(b.TotalDifficulty),
-		Transactions:     transactions,
+		Transactions:     b.Transactions,
 		TransactionsRoot: util.MarshalByteArray(b.TransactionsRoot[:]),
 		Uncles:           uncles,
 	})
@@ -278,18 +274,7 @@ func (b *LondonBlock) UnmarshalJSON(input []byte) error {
 		return errors.New("total difficulty invalid")
 	}
 
-	b.Transactions = make([]Transaction, 0, len(data.Transactions))
-	for _, tx := range data.Transactions {
-		txJSON, err := json.Marshal(tx)
-		if err != nil {
-			return errors.Wrap(err, "failed to remarshal")
-		}
-		transaction, err := UnmarshalTransactionJSON(txJSON)
-		if err != nil {
-			return errors.Wrap(err, "failed to unmarshal remarshaled transaction")
-		}
-		b.Transactions = append(b.Transactions, transaction)
-	}
+	b.Transactions = data.Transactions
 
 	if data.TransactionsRoot == "" {
 		return errors.New("transactions root missing")
@@ -300,7 +285,7 @@ func (b *LondonBlock) UnmarshalJSON(input []byte) error {
 	}
 	copy(b.TransactionsRoot[:], root)
 
-	b.Uncles = make([]Hash, len(data.Uncles))
+	b.Uncles = make([]types.Hash, len(data.Uncles))
 	for i, uncleStr := range data.Uncles {
 		if uncleStr == "" {
 			return errors.New("uncle invalid")

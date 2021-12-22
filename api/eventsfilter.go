@@ -15,17 +15,19 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 
-	"github.com/attestantio/go-execution-client/spec"
+	"github.com/attestantio/go-execution-client/types"
 	"github.com/attestantio/go-execution-client/util"
+	"github.com/pkg/errors"
 )
 
 // EventsFilter contains the events filter.
 type EventsFilter struct {
 	FromBlock *uint32
 	ToBlock   *uint32
-	Address   *spec.Address
-	Topics    *[]spec.Hash
+	Address   *types.Address
+	Topics    *[]types.Hash
 }
 
 // eventsFilterJSON is the spec representation of the struct.
@@ -58,4 +60,63 @@ func (e *EventsFilter) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(eventsFilterJSON)
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (e *EventsFilter) UnmarshalJSON(input []byte) error {
+	var eventsFilterJSON eventsFilterJSON
+	if err := json.Unmarshal(input, &eventsFilterJSON); err != nil {
+		return errors.Wrap(err, "invalid JSON")
+	}
+
+	return e.unpack(&eventsFilterJSON)
+}
+
+func (e *EventsFilter) unpack(data *eventsFilterJSON) error {
+	if data.FromBlock != "" {
+		fromBlock, err := util.StrToUint32("from block", data.FromBlock)
+		if err != nil {
+			return err
+		}
+		e.FromBlock = &fromBlock
+	}
+
+	if data.ToBlock != "" {
+		toBlock, err := util.StrToUint32("to block", data.ToBlock)
+		if err != nil {
+			return err
+		}
+		e.ToBlock = &toBlock
+	}
+
+	if data.Address != "" {
+		address, err := util.StrToAddress("address", data.Address)
+		if err != nil {
+			return err
+		}
+		e.Address = &address
+	}
+
+	if data.Topics != nil {
+		var err error
+		topics := make([]types.Hash, len(data.Topics))
+		for i, topic := range data.Topics {
+			topics[i], err = util.StrToHash("topic", topic)
+			if err != nil {
+				return err
+			}
+		}
+		e.Topics = &topics
+	}
+
+	return nil
+}
+
+// String returns a string version of the structure.
+func (e *EventsFilter) String() string {
+	data, err := json.Marshal(e)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+	return string(data)
 }

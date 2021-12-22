@@ -14,23 +14,19 @@
 package api
 
 import (
-	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
 
-	"github.com/attestantio/go-execution-client/spec"
+	"github.com/attestantio/go-execution-client/types"
 	"github.com/attestantio/go-execution-client/util"
-	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 )
 
 // TransactionResult contains the result of a transaction.
 type TransactionResult struct {
 	Output          []byte
-	StateDiff       map[spec.Address]*TransactionStateDiff
-	TransactionHash []byte
+	StateDiff       map[types.Address]*TransactionStateDiff
+	TransactionHash types.Hash
 }
 
 // transactionResultJSON is the spec representation of the struct.
@@ -38,13 +34,6 @@ type transactionResultJSON struct {
 	Output          string                           `json:"output,omitempty"`
 	StateDiff       map[string]*TransactionStateDiff `json:"stateDiff,omitempty"`
 	TransactionHash string                           `json:"transactionHash"`
-}
-
-// transactionResultYAML is the spec representation of the struct.
-type transactionResultYAML struct {
-	Output          string                           `yaml:"output,omitempty"`
-	StateDiff       map[string]*TransactionStateDiff `yaml:"stateDiff,omitempty"`
-	TransactionHash string                           `yaml:"transactionHash"`
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -70,69 +59,37 @@ func (t *TransactionResult) UnmarshalJSON(input []byte) error {
 	return t.unpack(&transactionResultJSON)
 }
 
-func (t *TransactionResult) unpack(transactionResultJSON *transactionResultJSON) error {
+func (t *TransactionResult) unpack(data *transactionResultJSON) error {
 	var err error
 
-	if transactionResultJSON.Output != "" {
-		t.Output, err = hex.DecodeString(util.PreUnmarshalHexString(transactionResultJSON.Output))
-		if err != nil {
-			return errors.Wrap(err, "output invalid")
-		}
-	}
-
-	stateDiff := make(map[spec.Address]*TransactionStateDiff)
-	for k, v := range transactionResultJSON.StateDiff {
-		address, err := hex.DecodeString(strings.TrimPrefix(k, "0x"))
+	if data.Output != "" {
+		t.Output, err = util.StrToByteArray("output", data.Output)
 		if err != nil {
 			return err
 		}
-		var key spec.Address
-		copy(key[:], address)
-		stateDiff[key] = v
+	}
+
+	stateDiff := make(map[types.Address]*TransactionStateDiff)
+	for k, v := range data.StateDiff {
+		address, err := util.StrToAddress("address", k)
+		if err != nil {
+			return err
+		}
+		stateDiff[address] = v
 	}
 	t.StateDiff = stateDiff
 
-	if transactionResultJSON.TransactionHash == "" {
-		return errors.New("transaction hash missing")
-	}
-	t.TransactionHash, err = hex.DecodeString(util.PreUnmarshalHexString(transactionResultJSON.TransactionHash))
+	t.TransactionHash, err = util.StrToHash("transaction hash", data.TransactionHash)
 	if err != nil {
-		return errors.Wrap(err, "transaction hash invalid")
+		return err
 	}
 
 	return nil
 }
 
-// MarshalYAML implements yaml.Marshaler.
-func (t *TransactionResult) MarshalYAML() ([]byte, error) {
-	stateDiff := make(map[string]*TransactionStateDiff)
-	for k, v := range t.StateDiff {
-		stateDiff[util.MarshalAddress(k[:])] = v
-	}
-	yamlBytes, err := yaml.MarshalWithOptions(&transactionResultYAML{
-		Output:          fmt.Sprintf("%#x", t.Output),
-		StateDiff:       stateDiff,
-		TransactionHash: fmt.Sprintf("%#x", t.TransactionHash),
-	}, yaml.Flow(true))
-	if err != nil {
-		return nil, err
-	}
-	return bytes.ReplaceAll(yamlBytes, []byte(`"`), []byte(`'`)), nil
-}
-
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (t *TransactionResult) UnmarshalYAML(input []byte) error {
-	// We unmarshal to the JSON struct to save on duplicate code.
-	var transactionResultJSON transactionResultJSON
-	if err := yaml.Unmarshal(input, &transactionResultJSON); err != nil {
-		return err
-	}
-	return t.unpack(&transactionResultJSON)
-}
-
 // String returns a string version of the structure.
 func (t *TransactionResult) String() string {
-	data, err := yaml.Marshal(t)
+	data, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}

@@ -17,10 +17,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/attestantio/go-execution-client/util"
-	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 )
 
@@ -38,14 +36,6 @@ type syncStateJSON struct {
 	HighestBlock  string `json:"highestBlock,omitempty"`
 	StartingBlock string `json:"startingBlock,omitempty"`
 	Syncing       bool   `json:"syncing"`
-}
-
-// syncStateYAML is the spec representation of the struct.
-type syncStateYAML struct {
-	CurrentBlock  uint32 `yaml:"currentBlock,omitempty"`
-	HighestBlock  uint32 `yaml:"highestBlock,omitempty"`
-	StartingBlock uint32 `yaml:"startingBlock,omitempty"`
-	Syncing       bool   `yaml:"syncing"`
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -86,63 +76,27 @@ func (s *SyncState) UnmarshalJSON(input []byte) error {
 func (s *SyncState) unpack(data *syncStateJSON) error {
 	var err error
 
-	if data.CurrentBlock == "" {
-		return errors.New("current block missing")
-	}
-	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.CurrentBlock), 16, 32)
+	s.CurrentBlock, err = util.StrToUint32("current block", data.CurrentBlock)
 	if err != nil {
-		return errors.Wrap(err, "current block invalid")
+		return err
 	}
-	s.CurrentBlock = uint32(tmp)
 
-	if data.HighestBlock == "" {
-		return errors.New("highest block missing")
-	}
-	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.HighestBlock), 16, 32)
+	s.HighestBlock, err = util.StrToUint32("highest block", data.HighestBlock)
 	if err != nil {
-		return errors.Wrap(err, "highest block invalid")
+		return err
 	}
-	s.HighestBlock = uint32(tmp)
 
-	if data.StartingBlock == "" {
-		return errors.New("starting block missing")
-	}
-	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.StartingBlock), 16, 32)
+	s.StartingBlock, err = util.StrToUint32("starting block", data.StartingBlock)
 	if err != nil {
-		return errors.Wrap(err, "starting block invalid")
+		return err
 	}
-	s.StartingBlock = uint32(tmp)
 
 	return nil
 }
 
-// MarshalYAML implements yaml.Marshaler.
-func (s *SyncState) MarshalYAML() ([]byte, error) {
-	yamlBytes, err := yaml.MarshalWithOptions(&syncStateYAML{
-		CurrentBlock:  s.CurrentBlock,
-		HighestBlock:  s.HighestBlock,
-		StartingBlock: s.StartingBlock,
-		Syncing:       s.Syncing,
-	}, yaml.Flow(true))
-	if err != nil {
-		return nil, err
-	}
-	return bytes.ReplaceAll(yamlBytes, []byte(`"`), []byte(`'`)), nil
-}
-
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (s *SyncState) UnmarshalYAML(input []byte) error {
-	// We unmarshal to the JSON struct to save on duplicate code.
-	var data syncStateJSON
-	if err := yaml.Unmarshal(input, &data); err != nil {
-		return err
-	}
-	return s.unpack(&data)
-}
-
 // String returns a string version of the structure.
 func (s *SyncState) String() string {
-	data, err := yaml.Marshal(s)
+	data, err := json.Marshal(s)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}

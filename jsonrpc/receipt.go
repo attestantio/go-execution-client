@@ -18,11 +18,12 @@ import (
 	"fmt"
 
 	"github.com/attestantio/go-execution-client/spec"
+	"github.com/attestantio/go-execution-client/types"
 	"github.com/pkg/errors"
 )
 
 // TransactionReceipt returns the transaction receipt for the given transaction hash.
-func (s *Service) TransactionReceipt(ctx context.Context, hash spec.Hash) (*spec.TransactionReceipt, error) {
+func (s *Service) TransactionReceipt(ctx context.Context, hash types.Hash) (*spec.TransactionReceipt, error) {
 	if len(hash) == 0 {
 		return nil, errors.New("hash nil")
 	}

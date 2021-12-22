@@ -21,7 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSyncState(t *testing.T) {
+// TestIssuanceJSON tests JSON for Issuance.
+func TestIssuanceJSON(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    []byte
@@ -35,38 +36,37 @@ func TestSyncState(t *testing.T) {
 		{
 			name:  "JSONBad",
 			input: []byte("[]"),
-			err:   "invalid sync state JSON \"[]\"",
+			err:   "invalid JSON: json: cannot unmarshal array into Go value of type api.issuanceJSON",
 		},
 		{
-			name:     "GoodNotSyncing",
-			input:    []byte(`false`),
-			expected: []byte(`{"syncing":false}`),
+			name:     "AllEmpty",
+			input:    []byte("{}"),
+			expected: []byte(`{"blockReward":"0x0","uncleReward":"0x0","issuance":"0x0"}`),
 		},
 		{
-			name:  "StartingBlockInvalid",
-			input: []byte(`{"startingBlock":"true","currentBlock":"0x123","highestBlock":"0x2345"}`),
-			err:   "starting block invalid: strconv.ParseUint: parsing \"true\": invalid syntax",
+			name:  "BlockRewardInvalid",
+			input: []byte(`{"blockReward":"true","uncleReward":"0x234","issuance":"0x357"}`),
+			err:   "block reward invalid",
 		},
 		{
-			name:  "CurrentBlockInvalid",
-			input: []byte(`{"startingBlock":"0x2","currentBlock":"true","highestBlock":"0x2345"}`),
-			err:   "current block invalid: strconv.ParseUint: parsing \"true\": invalid syntax",
+			name:  "UncleRewardInvalid",
+			input: []byte(`{"blockReward":"0x123","uncleReward":"true","issuance":"0x357"}`),
+			err:   "uncle reward invalid",
 		},
 		{
-			name:  "HighestBlockInvalid",
-			input: []byte(`{"startingBlock":"0x2","currentBlock":"0x123","highestBlock":"true"}`),
-			err:   "highest block invalid: strconv.ParseUint: parsing \"true\": invalid syntax",
+			name:  "IssuanceInvalid",
+			input: []byte(`{"blockReward":"0x123","uncleReward":"0x234","issuance":"true"}`),
+			err:   "issuance invalid",
 		},
 		{
-			name:     "GoodSyncing",
-			input:    []byte(`{"startingBlock":"0x2","currentBlock":"0x123","highestBlock":"0x2345"}`),
-			expected: []byte(`{"currentBlock":"0x123","highestBlock":"0x2345","startingBlock":"0x2","syncing":true}`),
+			name:  "Good",
+			input: []byte(`{"blockReward":"0x123","uncleReward":"0x234","issuance":"0x357"}`),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var res api.SyncState
+			var res api.Issuance
 			err := json.Unmarshal(test.input, &res)
 			if test.err != "" {
 				require.EqualError(t, err, test.err)

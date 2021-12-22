@@ -14,14 +14,11 @@
 package api
 
 import (
-	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strings"
 
-	"github.com/attestantio/go-execution-client/spec"
-	"github.com/goccy/go-yaml"
+	"github.com/attestantio/go-execution-client/types"
+	"github.com/attestantio/go-execution-client/util"
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +27,7 @@ type TransactionStateDiff struct {
 	Output  []byte
 	Balance *TransactionStateChange
 	Nonce   *TransactionStateChange
-	Storage map[spec.Hash]*TransactionStorageChange
+	Storage map[types.Hash]*TransactionStorageChange
 }
 
 // transactionStateDiffJSON is the spec representation of the struct.
@@ -38,13 +35,6 @@ type transactionStateDiffJSON struct {
 	Balance *json.RawMessage            `json:"balance,omitempty"`
 	Nonce   *json.RawMessage            `json:"nonce,omitempty"`
 	Storage map[string]*json.RawMessage `json:"storage,omitempty"`
-}
-
-// transactionStateDiffYAML is the spec representation of the struct.
-type transactionStateDiffYAML struct {
-	Balance *TransactionStateChange              `yaml:"balance,omitempty"`
-	Nonce   *TransactionStateChange              `yaml:"nonce,omitempty"`
-	Storage map[string]*TransactionStorageChange `yaml:"storage,omitempty"`
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -88,43 +78,41 @@ func (t *TransactionStateDiff) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (t *TransactionStateDiff) UnmarshalJSON(input []byte) error {
-	var transactionStateDiffJSON transactionStateDiffJSON
-	if err := json.Unmarshal(input, &transactionStateDiffJSON); err != nil {
+	var data transactionStateDiffJSON
+	if err := json.Unmarshal(input, &data); err != nil {
 		return errors.Wrap(err, "invalid JSON")
 	}
 
-	return t.unpack(&transactionStateDiffJSON)
+	return t.unpack(&data)
 }
 
-func (t *TransactionStateDiff) unpack(transactionStateDiffJSON *transactionStateDiffJSON) error {
-	if transactionStateDiffJSON.Balance != nil && (*transactionStateDiffJSON.Balance)[0] == '{' {
+func (t *TransactionStateDiff) unpack(data *transactionStateDiffJSON) error {
+	if data.Balance != nil && (*data.Balance)[0] == '{' {
 		var stateChange TransactionStateChange
-		if err := json.Unmarshal(*transactionStateDiffJSON.Balance, &stateChange); err != nil {
+		if err := json.Unmarshal(*data.Balance, &stateChange); err != nil {
 			return errors.Wrap(err, "invalid balance JSON")
 		}
 		t.Balance = &stateChange
 	}
 
-	if transactionStateDiffJSON.Nonce != nil && (*transactionStateDiffJSON.Nonce)[0] == '{' {
+	if data.Nonce != nil && (*data.Nonce)[0] == '{' {
 		var stateChange TransactionStateChange
-		if err := json.Unmarshal(*transactionStateDiffJSON.Nonce, &stateChange); err != nil {
+		if err := json.Unmarshal(*data.Nonce, &stateChange); err != nil {
 			return errors.Wrap(err, "invalid nonce JSON")
 		}
 		t.Nonce = &stateChange
 	}
 
-	storage := make(map[spec.Hash]*TransactionStorageChange)
-	for k, v := range transactionStateDiffJSON.Storage {
+	storage := make(map[types.Hash]*TransactionStorageChange)
+	for k, v := range data.Storage {
 		var stateChange TransactionStorageChange
 		if err := json.Unmarshal([]byte(*v), &stateChange); err != nil {
 			return errors.Wrap(err, "invalid storage JSON")
 		}
-		hash, err := hex.DecodeString(strings.TrimPrefix(k, "0x"))
+		key, err := util.StrToHash("storage key", k)
 		if err != nil {
 			return err
 		}
-		var key spec.Hash
-		copy(key[:], hash)
 		storage[key] = &stateChange
 	}
 	t.Storage = storage
@@ -132,37 +120,9 @@ func (t *TransactionStateDiff) unpack(transactionStateDiffJSON *transactionState
 	return nil
 }
 
-// MarshalYAML implements yaml.Marshaler.
-func (t *TransactionStateDiff) MarshalYAML() ([]byte, error) {
-	storage := make(map[string]*TransactionStorageChange)
-	for k, v := range t.Storage {
-		storage[fmt.Sprintf("%#x", k)] = v
-	}
-
-	yamlBytes, err := yaml.MarshalWithOptions(&transactionStateDiffYAML{
-		Balance: t.Balance,
-		Nonce:   t.Nonce,
-		Storage: storage,
-	}, yaml.Flow(true))
-	if err != nil {
-		return nil, err
-	}
-	return bytes.ReplaceAll(yamlBytes, []byte(`"`), []byte(`'`)), nil
-}
-
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (t *TransactionStateDiff) UnmarshalYAML(input []byte) error {
-	// We unmarshal to the JSON struct to save on duplicate code.
-	var transactionStateDiffJSON transactionStateDiffJSON
-	if err := yaml.Unmarshal(input, &transactionStateDiffJSON); err != nil {
-		return err
-	}
-	return t.unpack(&transactionStateDiffJSON)
-}
-
 // String returns a string version of the structure.
 func (t *TransactionStateDiff) String() string {
-	data, err := yaml.Marshal(t)
+	data, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}

@@ -38,6 +38,26 @@ func TestTransactionStorageChange(t *testing.T) {
 			err:   "invalid JSON: json: cannot unmarshal array into Go value of type api.transactionStorageChangeJSON",
 		},
 		{
+			name:  "CreationInvalid",
+			input: []byte(`{"+":"true"}`),
+			err:   "creation invalid: encoding/hex: invalid byte: U+0074 't'",
+		},
+		{
+			name:  "AlterationFromInvalid",
+			input: []byte(`{"*":{"from":"true","to":"0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"}}`),
+			err:   "from invalid: encoding/hex: invalid byte: U+0074 't'",
+		},
+		{
+			name:  "AlterationToInvalid",
+			input: []byte(`{"*":{"from":"0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f","to":"true"}}`),
+			err:   "to invalid: encoding/hex: invalid byte: U+0074 't'",
+		},
+		{
+			name:  "DeletionInvalid",
+			input: []byte(`{"-":"true"}`),
+			err:   "deletion invalid: encoding/hex: invalid byte: U+0074 't'",
+		},
+		{
 			name:  "GoodCreation",
 			input: []byte(`{"+":"0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"}`),
 		},
@@ -70,6 +90,7 @@ func TestTransactionStorageChange(t *testing.T) {
 				} else {
 					require.Equal(t, string(test.input), string(rt))
 				}
+				require.Equal(t, string(rt), res.String())
 			}
 		})
 	}

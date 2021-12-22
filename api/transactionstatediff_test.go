@@ -38,6 +38,26 @@ func TestTransactionStateDiff(t *testing.T) {
 			err:   "invalid JSON: json: cannot unmarshal array into Go value of type api.transactionStateDiffJSON",
 		},
 		{
+			name:  "BalanceInvalid",
+			input: []byte(`{"balance":{"*":"true"},"code":"=","nonce":{"*":{"from":"0x397","to":"0x398"}},"storage":{}}`),
+			err:   "invalid balance JSON: invalid JSON: json: cannot unmarshal string into Go struct field transactionStateChangeJSON.* of type api.transactionStateChangeAlterationJSON",
+		},
+		{
+			name:  "NonceInvalid",
+			input: []byte(`{"balance":{"*":{"from":"0x1d53ae02be969d05","to":"0x1d0ddce00eb7500a"}},"code":"=","nonce":{"*":true},"storage":{}}`),
+			err:   "invalid nonce JSON: invalid JSON: json: cannot unmarshal bool into Go struct field transactionStateChangeJSON.* of type api.transactionStateChangeAlterationJSON",
+		},
+		{
+			name:  "StorageInvalid",
+			input: []byte(`{"balance":{"*":{"from":"0x1d53ae02be969d05","to":"0x1d0ddce00eb7500a"}},"code":"=","nonce":{"*":{"from":"0x397","to":"0x398"}},"storage":{"true":"true"}}`),
+			err:   "invalid storage JSON: invalid JSON: json: cannot unmarshal string into Go value of type api.transactionStorageChangeJSON",
+		},
+		{
+			name:  "StorageKeyInvalid",
+			input: []byte(`{"balance":{"*":{"from":"0x1d53ae02be969d05","to":"0x1d0ddce00eb7500a"}},"code":"=","nonce":{"*":{"from":"0x397","to":"0x398"}},"storage":{"true":{}}}`),
+			err:   "storage key invalid: encoding/hex: invalid byte: U+0074 't'",
+		},
+		{
 			name:     "Good",
 			input:    []byte(`{"balance":{"*":{"from":"0x1d53ae02be969d05","to":"0x1d0ddce00eb7500a"}},"code":"=","nonce":{"*":{"from":"0x397","to":"0x398"}},"storage":{}}`),
 			expected: []byte(`{"balance":{"*":{"from":"0x1d53ae02be969d05","to":"0x1d0ddce00eb7500a"}},"nonce":{"*":{"from":"0x397","to":"0x398"}}}`),
@@ -59,6 +79,7 @@ func TestTransactionStateDiff(t *testing.T) {
 				} else {
 					require.Equal(t, string(test.input), string(rt))
 				}
+				require.Equal(t, string(rt), res.String())
 			}
 		})
 	}

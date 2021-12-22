@@ -19,7 +19,6 @@ import (
 	"math/big"
 
 	"github.com/attestantio/go-execution-client/util"
-	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 )
 
@@ -39,18 +38,6 @@ type transactionStateChangeJSON struct {
 type transactionStateChangeAlterationJSON struct {
 	From string `json:"from"`
 	To   string `json:"to"`
-}
-
-// transactionStateChangeYAML is the spec representation of the struct.
-type transactionStateChangeYAML struct {
-	Creation   string                                `yaml:"+,omitempty"`
-	Alteration *transactionStateChangeAlterationYAML `yaml:"*,omitempty"`
-	Deletion   string                                `yaml:"-,omitempty"`
-}
-
-type transactionStateChangeAlterationYAML struct {
-	From *big.Int `json:"from"`
-	To   *big.Int `json:"to"`
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -77,83 +64,48 @@ func (t *TransactionStateChange) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (t *TransactionStateChange) UnmarshalJSON(input []byte) error {
-	var transactionStateBalanceDiffJSON transactionStateChangeJSON
-	if err := json.Unmarshal(input, &transactionStateBalanceDiffJSON); err != nil {
+	var data transactionStateChangeJSON
+	if err := json.Unmarshal(input, &data); err != nil {
 		return errors.Wrap(err, "invalid JSON")
 	}
 
-	return t.unpack(&transactionStateBalanceDiffJSON)
+	return t.unpack(&data)
 }
 
-func (t *TransactionStateChange) unpack(transactionStateChangeJSON *transactionStateChangeJSON) error {
-	if transactionStateChangeJSON.Creation != "" {
-		value, success := new(big.Int).SetString(util.PreUnmarshalHexString(transactionStateChangeJSON.Creation), 16)
-		if !success {
-			return errors.New("creation invalid")
+func (t *TransactionStateChange) unpack(data *transactionStateChangeJSON) error {
+	var err error
+	if data.Creation != "" {
+		t.To, err = util.StrToBigInt("creation", data.Creation)
+		if err != nil {
+			return err
 		}
-		t.To = value
 	}
 
-	if transactionStateChangeJSON.Deletion != "" {
-		value, success := new(big.Int).SetString(util.PreUnmarshalHexString(transactionStateChangeJSON.Deletion), 16)
-		if !success {
-			return errors.New("deletion invalid")
+	if data.Deletion != "" {
+		t.From, err = util.StrToBigInt("deletion", data.Deletion)
+		if err != nil {
+			return err
 		}
-		t.From = value
 	}
 
-	if transactionStateChangeJSON.Alteration != nil {
-		from, success := new(big.Int).SetString(util.PreUnmarshalHexString(transactionStateChangeJSON.Alteration.From), 16)
-		if !success {
-			return errors.New("from invalid")
+	if data.Alteration != nil {
+		t.From, err = util.StrToBigInt("from", data.Alteration.From)
+		if err != nil {
+			return err
 		}
-		t.From = from
 
-		to, success := new(big.Int).SetString(util.PreUnmarshalHexString(transactionStateChangeJSON.Alteration.To), 16)
-		if !success {
-			return errors.New("to invalid")
+		t.To, err = util.StrToBigInt("to", data.Alteration.To)
+		if err != nil {
+			return err
 		}
-		t.To = to
 	}
 
 	return nil
 }
 
-// MarshalYAML implements yaml.Marshaler.
-func (t *TransactionStateChange) MarshalYAML() ([]byte, error) {
-	if t.From == nil {
-		return yaml.Marshal(&transactionStateChangeYAML{
-			Creation: util.MarshalBigInt(t.To),
-		})
-	}
-
-	if t.To == nil {
-		return yaml.Marshal(&transactionStateChangeYAML{
-			Deletion: util.MarshalBigInt(t.From),
-		})
-	}
-
-	return yaml.Marshal(&transactionStateChangeYAML{
-		Alteration: &transactionStateChangeAlterationYAML{
-			From: t.From,
-			To:   t.To,
-		},
-	})
-}
-
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (t *TransactionStateChange) UnmarshalYAML(input []byte) error {
-	// We unmarshal to the JSON struct to save on duplicate code.
-	var transactionStateBalanceDiffJSON transactionStateChangeJSON
-	if err := yaml.Unmarshal(input, &transactionStateBalanceDiffJSON); err != nil {
-		return err
-	}
-	return t.unpack(&transactionStateBalanceDiffJSON)
-}
-
 // String returns a string version of the structure.
 func (t *TransactionStateChange) String() string {
-	data, err := yaml.Marshal(t)
+	data, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}

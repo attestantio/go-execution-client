@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/attestantio/go-execution-client/types"
 	"github.com/attestantio/go-execution-client/util"
 	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
@@ -27,14 +28,14 @@ import (
 
 // TransactionEvent contains a transaction event.
 type TransactionEvent struct {
-	Address          Address
-	BlockHash        Hash
+	Address          types.Address
+	BlockHash        types.Hash
 	BlockNumber      uint32
 	Data             []byte
 	Index            uint32
 	Removed          bool
-	Topics           []Hash
-	TransactionHash  Hash
+	Topics           []types.Hash
+	TransactionHash  types.Hash
 	TransactionIndex uint32
 }
 
@@ -146,7 +147,7 @@ func (t *TransactionEvent) unpack(data *transactionEventJSON) error {
 
 	t.Removed = data.Removed
 
-	topics := make([]Hash, len(data.Topics))
+	topics := make([]types.Hash, len(data.Topics))
 	for i, topic := range data.Topics {
 		hash, err := hex.DecodeString(util.PreUnmarshalHexString(topic))
 		if err != nil {

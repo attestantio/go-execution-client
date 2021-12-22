@@ -14,12 +14,10 @@
 package api
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
 	"github.com/attestantio/go-execution-client/util"
-	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 )
 
@@ -39,18 +37,6 @@ type transactionStorageChangeJSON struct {
 type transactionStorageChangeAlterationJSON struct {
 	From string `json:"from,omitempty"`
 	To   string `json:"to,omitempty"`
-}
-
-// transactionStorageChangeYAML is the spec representation of the struct.
-type transactionStorageChangeYAML struct {
-	Creation   string                                  `yaml:"+,omitempty"`
-	Alteration *transactionStorageChangeAlterationYAML `yaml:"*,omitempty"`
-	Deletion   string                                  `yaml:"-,omitempty"`
-}
-
-type transactionStorageChangeAlterationYAML struct {
-	From string `yaml:"from,omitempty"`
-	To   string `yaml:"to,omitempty"`
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -77,81 +63,48 @@ func (t *TransactionStorageChange) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (t *TransactionStorageChange) UnmarshalJSON(input []byte) error {
-	var transactionStateBalanceDiffJSON transactionStorageChangeJSON
-	if err := json.Unmarshal(input, &transactionStateBalanceDiffJSON); err != nil {
+	var data transactionStorageChangeJSON
+	if err := json.Unmarshal(input, &data); err != nil {
 		return errors.Wrap(err, "invalid JSON")
 	}
 
-	return t.unpack(&transactionStateBalanceDiffJSON)
+	return t.unpack(&data)
 }
 
-func (t *TransactionStorageChange) unpack(transactionStorageChangeJSON *transactionStorageChangeJSON) error {
+func (t *TransactionStorageChange) unpack(data *transactionStorageChangeJSON) error {
 	var err error
-
-	if transactionStorageChangeJSON.Creation != "" {
-		t.To, err = hex.DecodeString(util.PreUnmarshalHexString(transactionStorageChangeJSON.Creation))
+	if data.Creation != "" {
+		t.To, err = util.StrToByteArray("creation", data.Creation)
 		if err != nil {
-			return errors.Wrap(err, "creation invalid")
+			return err
 		}
 	}
 
-	if transactionStorageChangeJSON.Deletion != "" {
-		t.From, err = hex.DecodeString(util.PreUnmarshalHexString(transactionStorageChangeJSON.Deletion))
+	if data.Deletion != "" {
+		t.From, err = util.StrToByteArray("deletion", data.Deletion)
 		if err != nil {
-			return errors.Wrap(err, "deletion invalid")
+			return err
 		}
 	}
 
-	if transactionStorageChangeJSON.Alteration != nil {
-		t.From, err = hex.DecodeString(util.PreUnmarshalHexString(transactionStorageChangeJSON.Alteration.From))
+	if data.Alteration != nil {
+		t.From, err = util.StrToByteArray("from", data.Alteration.From)
 		if err != nil {
-			return errors.Wrap(err, "from invalid")
+			return err
 		}
 
-		t.To, err = hex.DecodeString(util.PreUnmarshalHexString(transactionStorageChangeJSON.Alteration.To))
+		t.To, err = util.StrToByteArray("to", data.Alteration.To)
 		if err != nil {
-			return errors.Wrap(err, "to invalid")
+			return err
 		}
 	}
 
 	return nil
 }
 
-// MarshalYAML implements yaml.Marshaler.
-func (t *TransactionStorageChange) MarshalYAML() ([]byte, error) {
-	if t.From == nil {
-		return yaml.Marshal(&transactionStorageChangeYAML{
-			Creation: util.MarshalByteArray(t.To),
-		})
-	}
-
-	if t.To == nil {
-		return yaml.Marshal(&transactionStorageChangeYAML{
-			Deletion: util.MarshalByteArray(t.From),
-		})
-	}
-
-	return yaml.Marshal(&transactionStorageChangeYAML{
-		Alteration: &transactionStorageChangeAlterationYAML{
-			From: util.MarshalByteArray(t.From),
-			To:   util.MarshalByteArray(t.To),
-		},
-	})
-}
-
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (t *TransactionStorageChange) UnmarshalYAML(input []byte) error {
-	// We unmarshal to the JSON struct to save on duplicate code.
-	var transactionStateBalanceDiffJSON transactionStorageChangeJSON
-	if err := yaml.Unmarshal(input, &transactionStateBalanceDiffJSON); err != nil {
-		return err
-	}
-	return t.unpack(&transactionStateBalanceDiffJSON)
-}
-
 // String returns a string version of the structure.
 func (t *TransactionStorageChange) String() string {
-	data, err := yaml.Marshal(t)
+	data, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
