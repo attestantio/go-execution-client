@@ -61,3 +61,28 @@ func (t *Transaction) MarshalType0JSON() ([]byte, error) {
 		Value:            util.MarshalBigInt(t.Value),
 	})
 }
+
+// MarshalType0RLP returns an RLP representation of the transaction.
+func (t *Transaction) MarshalType0RLP() ([]byte, error) {
+	items := make([][]byte, 9)
+
+	items[0] = util.RLPUint64(t.Nonce)
+	items[1] = util.RLPUint64(t.GasPrice)
+	items[2] = util.RLPUint64(uint64(t.Gas))
+	if t.To != nil {
+		items[3] = util.RLPAddress(*t.To)
+	} else {
+		items[3] = util.RLPBytes(nil)
+	}
+	if t.Value != nil {
+		items[4] = util.RLPBytes(t.Value.Bytes())
+	} else {
+		items[4] = util.RLPBytes(nil)
+	}
+	items[5] = util.RLPBytes(t.Input)
+	items[6] = util.RLPBytes([]byte{byte(int8(t.V.Uint64()))})
+	items[7] = util.RLPBytes(t.R.Bytes())
+	items[8] = util.RLPBytes(t.S.Bytes())
+
+	return util.RLPList(items), nil
+}

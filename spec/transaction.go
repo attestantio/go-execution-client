@@ -92,7 +92,7 @@ type transactionYAML struct {
 	S                    *big.Int           `yaml:"s"`
 	To                   string             `yaml:"to"`
 	TransactionIndex     uint32             `yaml:"transactionIndex"`
-	Type                 uint32             `yaml:"type"`
+	Type                 uint64             `yaml:"type"`
 	V                    *big.Int           `yaml:"v"`
 	Value                *big.Int           `yaml:"value"`
 }
@@ -314,7 +314,7 @@ func (t *Transaction) MarshalYAML() ([]byte, error) {
 		R:                    t.R,
 		S:                    t.S,
 		To:                   to,
-		Type:                 2,
+		Type:                 t.Type,
 		TransactionIndex:     t.TransactionIndex,
 		V:                    t.V,
 		Value:                t.Value,
@@ -333,6 +333,20 @@ func (t *Transaction) UnmarshalYAML(input []byte) error {
 		return err
 	}
 	return t.unpack(&data)
+}
+
+// MarshalRLP returns an RLP representation of the transaction.
+func (t *Transaction) MarshalRLP() ([]byte, error) {
+	switch t.Type {
+	case 0:
+		return t.MarshalType0RLP()
+	case 1:
+		return t.MarshalType1RLP()
+	case 2:
+		return t.MarshalType2RLP()
+	default:
+		return nil, errors.New("unsupported type")
+	}
 }
 
 // String returns a string version of the structure.

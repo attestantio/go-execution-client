@@ -70,3 +70,48 @@ func (t *Transaction) MarshalType2JSON() ([]byte, error) {
 		Value:                util.MarshalBigInt(t.Value),
 	})
 }
+
+// MarshalType2RLP returns an RLP representation of the transaction.
+func (t *Transaction) MarshalType2RLP() ([]byte, error) {
+	items := make([][]byte, 12)
+
+	items[0] = util.RLPUint64(t.ChainID)
+	items[1] = util.RLPUint64(t.Nonce)
+	items[2] = util.RLPUint64(t.MaxPriorityFeePerGas)
+	items[3] = util.RLPUint64(t.MaxFeePerGas)
+	items[4] = util.RLPUint64(uint64(t.Gas))
+	if t.To != nil {
+		items[5] = util.RLPAddress(*t.To)
+	} else {
+		items[5] = util.RLPBytes(nil)
+	}
+	if t.Value != nil {
+		items[6] = util.RLPBytes(t.Value.Bytes())
+	} else {
+		items[6] = util.RLPBytes(nil)
+	}
+	items[7] = util.RLPBytes(t.Input)
+	accessList := make([][]byte, len(t.AccessList))
+	for i, accessListEntry := range t.AccessList {
+		list := make([][]byte, 2)
+		list[0] = util.RLPBytes(accessListEntry.Address)
+		keys := make([][]byte, len(accessListEntry.StorageKeys))
+		for j, key := range accessListEntry.StorageKeys {
+			keys[j] = util.RLPBytes(key)
+		}
+		list[1] = util.RLPList(keys)
+		accessList[i] = util.RLPList(list)
+	}
+	items[8] = util.RLPList(accessList)
+
+	if t.V.Uint64() != 0 {
+		items[9] = util.RLPBytes([]byte{byte(int8(t.V.Uint64()))})
+	} else {
+		items[9] = util.RLPBytes(nil)
+	}
+	items[10] = util.RLPBytes(t.R.Bytes())
+	items[11] = util.RLPBytes(t.S.Bytes())
+
+	list := append([]byte{0x02}, util.RLPList(items)...)
+	return util.RLPBytes(list), nil
+}
