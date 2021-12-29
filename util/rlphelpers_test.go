@@ -14,10 +14,11 @@
 package util_test
 
 import (
+	"bytes"
 	"testing"
 
+	"github.com/attestantio/go-execution-client/types"
 	"github.com/attestantio/go-execution-client/util"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,7 +63,9 @@ func TestRLPBytes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.expected, util.RLPBytes(test.input))
+			buf := bytes.NewBuffer(make([]byte, 0, 1024))
+			util.RLPBytes(buf, test.input)
+			require.Equal(t, test.expected, buf.Bytes())
 		})
 	}
 }
@@ -71,7 +74,7 @@ func TestRLPBytes(t *testing.T) {
 func TestRLPList(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    [][]byte
+		input    []byte
 		expected []byte
 	}{
 		{
@@ -81,40 +84,44 @@ func TestRLPList(t *testing.T) {
 		},
 		{
 			name:     "Empty",
-			input:    [][]byte{},
+			input:    []byte{},
 			expected: []byte{0xc0},
 		},
 		{
-			name: "Catdog",
-			input: [][]byte{
-				{0x83, 'c', 'a', 't'},
-				{0x83, 'd', 'o', 'g'},
-			},
+			name:     "Catdog",
+			input:    []byte{0x83, 'c', 'a', 't', 0x83, 'd', 'o', 'g'},
 			expected: []byte{0xc8, 0x83, 'c', 'a', 't', 0x83, 'd', 'o', 'g'},
 		},
 		{
-			name: "Nested",
-			input: [][]byte{
-				util.RLPBytes([]byte{0xfe}),
-				util.RLPList([][]byte{
-					util.RLPBytes([]byte{0x01}),
-					util.RLPBytes([]byte{0x02}),
-				}),
-				util.RLPBytes([]byte{0xff}),
-				util.RLPList([][]byte{
-					util.RLPBytes([]byte{0x03}),
-					util.RLPBytes([]byte{0x04}),
-				}),
-			},
+			name:     "Nested",
+			input:    []byte{0x81, 0xfe, 0xc2, 0x01, 0x02, 0x81, 0xff, 0xc2, 0x03, 0x04},
 			expected: []byte{0xca, 0x81, 0xfe, 0xc2, 0x01, 0x02, 0x81, 0xff, 0xc2, 0x03, 0x04},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, test.expected, util.RLPList(test.input))
+			buf := bytes.NewBuffer(make([]byte, 0, 1024))
+			util.RLPList(buf, test.input)
+			require.Equal(t, test.expected, buf.Bytes())
 		})
 	}
+}
+
+// TestRLPAddress tests the RLP address encoding function.
+func TestRLPAddress(t *testing.T) {
+	var address types.Address
+	copy(address[:], []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13})
+	buf := bytes.NewBuffer(make([]byte, 0, 1024))
+	util.RLPAddress(buf, address)
+	require.Equal(t, []byte{0x94, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13}, buf.Bytes())
+}
+
+// TestRLPNil tests the RLP nil encoding function.
+func TestRLPNil(t *testing.T) {
+	buf := bytes.NewBuffer(make([]byte, 0, 1024))
+	util.RLPNil(buf)
+	require.Equal(t, []byte{0x80}, buf.Bytes())
 }
 
 // TestRLPUint64 tests the RLP uint64 encoding function.
@@ -153,7 +160,9 @@ func TestRLPUint64(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.expected, util.RLPUint64(test.input))
+			buf := bytes.NewBuffer(make([]byte, 0, 1024))
+			util.RLPUint64(buf, test.input)
+			require.Equal(t, test.expected, buf.Bytes())
 		})
 	}
 }

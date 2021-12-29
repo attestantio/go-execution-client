@@ -14,6 +14,7 @@
 package spec
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/attestantio/go-execution-client/util"
@@ -69,43 +70,52 @@ func (t *Transaction) MarshalType1JSON() ([]byte, error) {
 
 // MarshalType1RLP returns an RLP representation of the transaction.
 func (t *Transaction) MarshalType1RLP() ([]byte, error) {
-	items := make([][]byte, 11)
+	// Create generic buffers, to allow reuse.
+	bufA := bytes.NewBuffer(make([]byte, 0, 1024))
+	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
 
-	items[0] = util.RLPUint64(t.ChainID)
-	items[1] = util.RLPUint64(t.Nonce)
-	items[2] = util.RLPUint64(t.GasPrice)
-	items[3] = util.RLPUint64(uint64(t.Gas))
+	// Transaction data.
+	util.RLPUint64(bufA, t.ChainID)
+	util.RLPUint64(bufA, t.Nonce)
+	util.RLPUint64(bufA, t.GasPrice)
+	util.RLPUint64(bufA, uint64(t.Gas))
 	if t.To != nil {
-		items[4] = util.RLPAddress(*t.To)
+		util.RLPAddress(bufA, *t.To)
 	} else {
-		items[4] = util.RLPBytes(nil)
+		util.RLPNil(bufA)
 	}
 	if t.Value != nil {
-		items[5] = util.RLPBytes(t.Value.Bytes())
+		util.RLPBytes(bufA, t.Value.Bytes())
 	} else {
-		items[5] = util.RLPBytes(nil)
+		util.RLPNil(bufA)
 	}
-	items[6] = util.RLPBytes(t.Input)
-	accessList := make([][]byte, len(t.AccessList))
-	for i, accessListEntry := range t.AccessList {
-		list := make([][]byte, 2)
-		list[0] = util.RLPBytes(accessListEntry.Address)
-		keys := make([][]byte, len(accessListEntry.StorageKeys))
-		for j, key := range accessListEntry.StorageKeys {
-			keys[j] = util.RLPBytes(key)
+	util.RLPBytes(bufA, t.Input)
+	if len(t.AccessList) != 0 {
+		entryBuf := bytes.NewBuffer(make([]byte, 0, 1024))
+		addressBuf := bytes.NewBuffer(make([]byte, 0, 20))
+		for _, accessListEntry := range t.AccessList {
+			util.RLPBytes(entryBuf, accessListEntry.Address)
+			for _, key := range accessListEntry.StorageKeys {
+				util.RLPBytes(addressBuf, key)
+			}
+			util.RLPList(entryBuf, addressBuf.Bytes())
+			addressBuf.Reset()
+			util.RLPList(bufB, entryBuf.Bytes())
+			entryBuf.Reset()
 		}
-		list[1] = util.RLPList(keys)
-		accessList[i] = util.RLPList(list)
 	}
-	items[7] = util.RLPList(accessList)
-	if t.V.Uint64() != 0 {
-		items[8] = util.RLPBytes([]byte{byte(int8(t.V.Uint64()))})
-	} else {
-		items[8] = util.RLPBytes(nil)
-	}
-	items[9] = util.RLPBytes(t.R.Bytes())
-	items[10] = util.RLPBytes(t.S.Bytes())
+	util.RLPList(bufA, bufB.Bytes())
+	bufB.Reset()
 
-	list := append([]byte{0x01}, util.RLPList(items)...)
-	return util.RLPBytes(list), nil
+	// Signature.
+	util.RLPBytes(bufA, t.V.Bytes())
+	util.RLPBytes(bufA, t.R.Bytes())
+	util.RLPBytes(bufA, t.S.Bytes())
+
+	// EIP-2718 definition.
+	bufB.WriteByte(0x01)
+	util.RLPList(bufB, bufA.Bytes())
+	bufA.Reset()
+	util.RLPBytes(bufA, bufB.Bytes())
+	return bufA.Bytes(), nil
 }

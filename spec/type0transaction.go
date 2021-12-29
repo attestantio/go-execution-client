@@ -13,6 +13,7 @@
 package spec
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/attestantio/go-execution-client/util"
@@ -64,25 +65,31 @@ func (t *Transaction) MarshalType0JSON() ([]byte, error) {
 
 // MarshalType0RLP returns an RLP representation of the transaction.
 func (t *Transaction) MarshalType0RLP() ([]byte, error) {
-	items := make([][]byte, 9)
+	// Create generic buffers, to allow reuse.
+	bufA := bytes.NewBuffer(make([]byte, 0, 1024))
+	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
 
-	items[0] = util.RLPUint64(t.Nonce)
-	items[1] = util.RLPUint64(t.GasPrice)
-	items[2] = util.RLPUint64(uint64(t.Gas))
+	// Transaction data.
+	util.RLPUint64(bufA, t.Nonce)
+	util.RLPUint64(bufA, t.GasPrice)
+	util.RLPUint64(bufA, uint64(t.Gas))
 	if t.To != nil {
-		items[3] = util.RLPAddress(*t.To)
+		util.RLPAddress(bufA, *t.To)
 	} else {
-		items[3] = util.RLPBytes(nil)
+		util.RLPNil(bufA)
 	}
 	if t.Value != nil {
-		items[4] = util.RLPBytes(t.Value.Bytes())
+		util.RLPBytes(bufA, t.Value.Bytes())
 	} else {
-		items[4] = util.RLPBytes(nil)
+		util.RLPNil(bufA)
 	}
-	items[5] = util.RLPBytes(t.Input)
-	items[6] = util.RLPBytes([]byte{byte(int8(t.V.Uint64()))})
-	items[7] = util.RLPBytes(t.R.Bytes())
-	items[8] = util.RLPBytes(t.S.Bytes())
+	util.RLPBytes(bufA, t.Input)
 
-	return util.RLPList(items), nil
+	// Signature.
+	util.RLPBytes(bufA, t.V.Bytes())
+	util.RLPBytes(bufA, t.R.Bytes())
+	util.RLPBytes(bufA, t.S.Bytes())
+
+	util.RLPList(bufB, bufA.Bytes())
+	return bufB.Bytes(), nil
 }
