@@ -13,6 +13,7 @@
 package spec
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/attestantio/go-execution-client/util"
@@ -60,4 +61,35 @@ func (t *Transaction) MarshalType0JSON() ([]byte, error) {
 		V:                util.MarshalBigInt(t.V),
 		Value:            util.MarshalBigInt(t.Value),
 	})
+}
+
+// MarshalType0RLP returns an RLP representation of the transaction.
+func (t *Transaction) MarshalType0RLP() ([]byte, error) {
+	// Create generic buffers, to allow reuse.
+	bufA := bytes.NewBuffer(make([]byte, 0, 1024))
+	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
+
+	// Transaction data.
+	util.RLPUint64(bufA, t.Nonce)
+	util.RLPUint64(bufA, t.GasPrice)
+	util.RLPUint64(bufA, uint64(t.Gas))
+	if t.To != nil {
+		util.RLPAddress(bufA, *t.To)
+	} else {
+		util.RLPNil(bufA)
+	}
+	if t.Value != nil {
+		util.RLPBytes(bufA, t.Value.Bytes())
+	} else {
+		util.RLPNil(bufA)
+	}
+	util.RLPBytes(bufA, t.Input)
+
+	// Signature.
+	util.RLPBytes(bufA, t.V.Bytes())
+	util.RLPBytes(bufA, t.R.Bytes())
+	util.RLPBytes(bufA, t.S.Bytes())
+
+	util.RLPList(bufB, bufA.Bytes())
+	return bufB.Bytes(), nil
 }

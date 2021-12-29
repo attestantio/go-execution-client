@@ -14,6 +14,7 @@
 package spec
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/attestantio/go-execution-client/util"
@@ -65,4 +66,56 @@ func (t *Transaction) MarshalType1JSON() ([]byte, error) {
 		V:                util.MarshalBigInt(t.V),
 		Value:            util.MarshalBigInt(t.Value),
 	})
+}
+
+// MarshalType1RLP returns an RLP representation of the transaction.
+func (t *Transaction) MarshalType1RLP() ([]byte, error) {
+	// Create generic buffers, to allow reuse.
+	bufA := bytes.NewBuffer(make([]byte, 0, 1024))
+	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
+
+	// Transaction data.
+	util.RLPUint64(bufA, t.ChainID)
+	util.RLPUint64(bufA, t.Nonce)
+	util.RLPUint64(bufA, t.GasPrice)
+	util.RLPUint64(bufA, uint64(t.Gas))
+	if t.To != nil {
+		util.RLPAddress(bufA, *t.To)
+	} else {
+		util.RLPNil(bufA)
+	}
+	if t.Value != nil {
+		util.RLPBytes(bufA, t.Value.Bytes())
+	} else {
+		util.RLPNil(bufA)
+	}
+	util.RLPBytes(bufA, t.Input)
+	if len(t.AccessList) != 0 {
+		entryBuf := bytes.NewBuffer(make([]byte, 0, 1024))
+		addressBuf := bytes.NewBuffer(make([]byte, 0, 20))
+		for _, accessListEntry := range t.AccessList {
+			util.RLPBytes(entryBuf, accessListEntry.Address)
+			for _, key := range accessListEntry.StorageKeys {
+				util.RLPBytes(addressBuf, key)
+			}
+			util.RLPList(entryBuf, addressBuf.Bytes())
+			addressBuf.Reset()
+			util.RLPList(bufB, entryBuf.Bytes())
+			entryBuf.Reset()
+		}
+	}
+	util.RLPList(bufA, bufB.Bytes())
+	bufB.Reset()
+
+	// Signature.
+	util.RLPBytes(bufA, t.V.Bytes())
+	util.RLPBytes(bufA, t.R.Bytes())
+	util.RLPBytes(bufA, t.S.Bytes())
+
+	// EIP-2718 definition.
+	bufB.WriteByte(0x01)
+	util.RLPList(bufB, bufA.Bytes())
+	bufA.Reset()
+	util.RLPBytes(bufA, bufB.Bytes())
+	return bufA.Bytes(), nil
 }
