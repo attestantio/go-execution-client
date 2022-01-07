@@ -19,6 +19,7 @@ import (
 	"github.com/attestantio/go-execution-client/api"
 	"github.com/attestantio/go-execution-client/spec"
 	"github.com/attestantio/go-execution-client/types"
+	"github.com/attestantio/go-execution-client/util"
 )
 
 // Service is the service providing a connection to an execution client.
@@ -66,10 +67,22 @@ type NetworkIDProvider interface {
 	NetworkID(ctx context.Context) (uint64, error)
 }
 
+// NewPendingTransactionsProvider is the interface for providing new pending transactions.
+type NewPendingTransactionsProvider interface {
+	// NewPendingTransactions subscribes to new pending transactions.
+	NewPendingTransactions(ctx context.Context, ch chan *spec.Transaction) (*util.Subscription, error)
+}
+
 // SyncingProvider is the interface for providing syncing information.
 type SyncingProvider interface {
 	// Syncing obtains information about the sync state of the node.
 	Syncing(ctx context.Context) (*api.SyncState, error)
+}
+
+// TransactionsProvider is the interface for providing transactions.
+type TransactionsProvider interface {
+	// Transaction returns the transaction for the given transaction hash.
+	Transaction(ctx context.Context, hash types.Hash) (*spec.Transaction, error)
 }
 
 // TransactionReceiptsProvider is the interface for providing transaction receipts.

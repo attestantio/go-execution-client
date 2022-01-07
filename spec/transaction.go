@@ -30,10 +30,9 @@ import (
 // Transaction is a struct that covers all transaction types.
 type Transaction struct {
 	Type                 uint64
-	BlockHash            types.Hash
-	BlockIndex           uint32
+	BlockHash            *types.Hash
 	ChainID              uint64
-	BlockNumber          uint32
+	BlockNumber          *uint32
 	From                 types.Address
 	Gas                  uint32
 	GasPrice             uint64
@@ -45,7 +44,7 @@ type Transaction struct {
 	R                    *big.Int
 	S                    *big.Int
 	To                   *types.Address
-	TransactionIndex     uint32
+	TransactionIndex     *uint32
 	V                    *big.Int
 	Value                *big.Int
 	AccessList           []*AccessListEntry
@@ -54,8 +53,8 @@ type Transaction struct {
 // transactionJSON is the spec representation of the struct.
 type transactionJSON struct {
 	AccessList           []*AccessListEntry `json:"accessList"`
-	BlockHash            string             `json:"blockHash"`
-	BlockNumber          string             `json:"blockNumber"`
+	BlockHash            *string            `json:"blockHash"`
+	BlockNumber          *string            `json:"blockNumber"`
 	ChainID              string             `json:"chainId"`
 	From                 string             `json:"from"`
 	Gas                  string             `json:"gas"`
@@ -68,7 +67,7 @@ type transactionJSON struct {
 	R                    string             `json:"r"`
 	S                    string             `json:"s"`
 	To                   string             `json:"to"`
-	TransactionIndex     string             `json:"transactionIndex"`
+	TransactionIndex     *string            `json:"transactionIndex"`
 	Type                 string             `json:"type"`
 	V                    string             `json:"v"`
 	Value                string             `json:"value"`
@@ -77,8 +76,8 @@ type transactionJSON struct {
 // transactionYAML is the spec representation of the struct.
 type transactionYAML struct {
 	AccessList           []*AccessListEntry `yaml:"accessList"`
-	BlockHash            string             `yaml:"blockHash"`
-	BlockNumber          uint32             `yaml:"blockNumber"`
+	BlockHash            *string            `yaml:"blockHash"`
+	BlockNumber          *uint32            `yaml:"blockNumber"`
 	ChainID              uint64             `yaml:"chainId"`
 	From                 string             `yaml:"from"`
 	Gas                  uint32             `yaml:"gas,omitempty"`
@@ -91,7 +90,7 @@ type transactionYAML struct {
 	R                    *big.Int           `yaml:"r"`
 	S                    *big.Int           `yaml:"s"`
 	To                   string             `yaml:"to"`
-	TransactionIndex     uint32             `yaml:"transactionIndex"`
+	TransactionIndex     *uint32            `yaml:"transactionIndex"`
 	Type                 uint64             `yaml:"type"`
 	V                    *big.Int           `yaml:"v"`
 	Value                *big.Int           `yaml:"value"`
@@ -144,23 +143,24 @@ func (t *Transaction) unpack(data *transactionJSON) error {
 		}
 	}
 
-	if data.BlockHash == "" {
-		return errors.New("block hash missing")
+	if data.BlockHash != nil {
+		hash, err := hex.DecodeString(util.PreUnmarshalHexString(*data.BlockHash))
+		if err != nil {
+			return errors.Wrap(err, "block hash invalid")
+		}
+		blockHash := types.Hash{}
+		copy(blockHash[:], hash)
+		t.BlockHash = &blockHash
+		if data.BlockNumber == nil {
+			return errors.New("block number missing")
+		}
+		tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(*data.BlockNumber), 16, 32)
+		if err != nil {
+			return errors.Wrap(err, "block number invalid")
+		}
+		blockNumber := uint32(tmp)
+		t.BlockNumber = &blockNumber
 	}
-	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.BlockHash))
-	if err != nil {
-		return errors.Wrap(err, "block hash invalid")
-	}
-	copy(t.BlockHash[:], hash)
-
-	if data.BlockNumber == "" {
-		return errors.New("block number missing")
-	}
-	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.BlockNumber), 16, 32)
-	if err != nil {
-		return errors.Wrap(err, "block number invalid")
-	}
-	t.BlockNumber = uint32(tmp)
 
 	if t.Type == 1 || t.Type == 2 {
 		if data.ChainID == "" {
@@ -184,24 +184,23 @@ func (t *Transaction) unpack(data *transactionJSON) error {
 	if data.Gas == "" {
 		return errors.New("gas missing")
 	}
-	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Gas), 16, 32)
+	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.Gas), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "gas invalid")
 	}
 	t.Gas = uint32(tmp)
 
-	if data.GasPrice == "" {
-		return errors.New("gas price missing")
-	}
-	t.GasPrice, err = strconv.ParseUint(util.PreUnmarshalHexString(data.GasPrice), 16, 64)
-	if err != nil {
-		return errors.Wrap(err, "gas price invalid")
+	if data.GasPrice != "" {
+		t.GasPrice, err = strconv.ParseUint(util.PreUnmarshalHexString(data.GasPrice), 16, 64)
+		if err != nil {
+			return errors.Wrap(err, "gas price invalid")
+		}
 	}
 
 	if data.Hash == "" {
 		return errors.New("hash missing")
 	}
-	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.Hash))
+	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.Hash))
 	if err != nil {
 		return errors.Wrap(err, "hash invalid")
 	}
@@ -248,14 +247,14 @@ func (t *Transaction) unpack(data *transactionJSON) error {
 		t.To = &to
 	}
 
-	if data.TransactionIndex == "" {
-		return errors.New("transaction index missing")
+	if data.TransactionIndex != nil {
+		tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(*data.TransactionIndex), 16, 32)
+		if err != nil {
+			return errors.Wrap(err, "transaction index invalid")
+		}
+		transactionIndex := uint32(tmp)
+		t.TransactionIndex = &transactionIndex
 	}
-	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.TransactionIndex), 16, 32)
-	if err != nil {
-		return errors.Wrap(err, "transaction index invalid")
-	}
-	t.TransactionIndex = uint32(tmp)
 
 	if data.Value == "" {
 		return errors.New("value missing")
@@ -298,9 +297,14 @@ func (t *Transaction) MarshalYAML() ([]byte, error) {
 	if t.To != nil {
 		to = util.MarshalByteArray(t.To[:])
 	}
+	var blockHash *string
+	if t.BlockHash != nil {
+		tmp := fmt.Sprintf("%#x", *t.BlockHash)
+		blockHash = &tmp
+	}
 	yamlBytes, err := yaml.MarshalWithOptions(&transactionYAML{
 		AccessList:           t.AccessList,
-		BlockHash:            fmt.Sprintf("%#x", t.BlockHash),
+		BlockHash:            blockHash,
 		BlockNumber:          t.BlockNumber,
 		ChainID:              t.ChainID,
 		From:                 fmt.Sprintf("%#x", t.From),

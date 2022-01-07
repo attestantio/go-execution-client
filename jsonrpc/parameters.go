@@ -21,9 +21,10 @@ import (
 )
 
 type parameters struct {
-	logLevel zerolog.Level
-	address  string
-	timeout  time.Duration
+	logLevel         zerolog.Level
+	address          string
+	webSocketAddress string
+	timeout          time.Duration
 }
 
 // Parameter is the interface for service parameters.
@@ -51,6 +52,14 @@ func WithAddress(address string) Parameter {
 	})
 }
 
+// WithWebSocketAddress provides the address for the websocket endpoint.
+// If not supplied it will use the value supplied as the address.
+func WithWebSocketAddress(address string) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.webSocketAddress = address
+	})
+}
+
 // WithTimeout sets the maximum duration for all requests to the endpoint.
 func WithTimeout(timeout time.Duration) Parameter {
 	return parameterFunc(func(p *parameters) {
@@ -72,6 +81,9 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 
 	if parameters.address == "" {
 		return nil, errors.New("no address specified")
+	}
+	if parameters.webSocketAddress == "" {
+		parameters.webSocketAddress = parameters.address
 	}
 	if parameters.timeout == 0 {
 		return nil, errors.New("no timeout specified")

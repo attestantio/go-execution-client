@@ -16,6 +16,7 @@ package spec
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/attestantio/go-execution-client/util"
 )
@@ -23,8 +24,8 @@ import (
 // type1TransactionJSON is the spec representation of a type 1 transaction.
 type type1TransactionJSON struct {
 	AccessList       []*AccessListEntry `json:"accessList"`
-	BlockHash        string             `json:"blockHash"`
-	BlockNumber      string             `json:"blockNumber"`
+	BlockHash        *string            `json:"blockHash"`
+	BlockNumber      *string            `json:"blockNumber"`
 	ChainID          string             `json:"chainId"`
 	From             string             `json:"from"`
 	Gas              string             `json:"gas"`
@@ -35,7 +36,7 @@ type type1TransactionJSON struct {
 	R                string             `json:"r"`
 	S                string             `json:"s"`
 	To               string             `json:"to"`
-	TransactionIndex string             `json:"transactionIndex"`
+	TransactionIndex *string            `json:"transactionIndex"`
 	Type             string             `json:"type"`
 	V                string             `json:"v"`
 	Value            string             `json:"value"`
@@ -43,14 +44,29 @@ type type1TransactionJSON struct {
 
 // MarshalType1JSON marshals a type 1 transaction.
 func (t *Transaction) MarshalType1JSON() ([]byte, error) {
+	var blockHash *string
+	if t.BlockHash != nil {
+		tmp := fmt.Sprintf("%#x", *t.BlockHash)
+		blockHash = &tmp
+	}
+	var blockNumber *string
+	if t.BlockNumber != nil {
+		tmp := util.MarshalUint32(*t.BlockNumber)
+		blockNumber = &tmp
+	}
 	to := ""
 	if t.To != nil {
 		to = util.MarshalByteArray(t.To[:])
 	}
+	var transactionIndex *string
+	if t.TransactionIndex != nil {
+		tmp := util.MarshalUint32(*t.TransactionIndex)
+		transactionIndex = &tmp
+	}
 	return json.Marshal(&type1TransactionJSON{
 		AccessList:       t.AccessList,
-		BlockHash:        util.MarshalByteArray(t.BlockHash[:]),
-		BlockNumber:      util.MarshalUint32(t.BlockNumber),
+		BlockHash:        blockHash,
+		BlockNumber:      blockNumber,
 		ChainID:          util.MarshalUint64(t.ChainID),
 		From:             util.MarshalByteArray(t.From[:]),
 		Gas:              util.MarshalUint32(t.Gas),
@@ -62,7 +78,7 @@ func (t *Transaction) MarshalType1JSON() ([]byte, error) {
 		S:                util.MarshalBigInt(t.S),
 		To:               to,
 		Type:             "0x1",
-		TransactionIndex: util.MarshalUint32(t.TransactionIndex),
+		TransactionIndex: transactionIndex,
 		V:                util.MarshalBigInt(t.V),
 		Value:            util.MarshalBigInt(t.Value),
 	})

@@ -33,9 +33,10 @@ type Service struct {
 	// Hold the initialising context to use for streams.
 	ctx context.Context
 
-	address string
-	client  jsonrpc.RPCClient
-	timeout time.Duration
+	address          string
+	webSocketAddress string
+	client           jsonrpc.RPCClient
+	timeout          time.Duration
 
 	// Client capability information.
 	isIssuanceProvider bool
@@ -75,15 +76,28 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 		address = fmt.Sprintf("http://%s", parameters.address)
 	}
 
+	webSocketAddress := parameters.webSocketAddress
+	if strings.HasPrefix(webSocketAddress, "http://") {
+		webSocketAddress = fmt.Sprintf("ws://%s", webSocketAddress[7:])
+	}
+	if strings.HasPrefix(webSocketAddress, "https://") {
+		webSocketAddress = fmt.Sprintf("wss://%s", webSocketAddress[8:])
+	}
+	if !strings.HasPrefix(webSocketAddress, "ws") {
+		webSocketAddress = fmt.Sprintf("ws://%s", webSocketAddress)
+	}
+	log.Trace().Str("address", address).Str("web_socket_address", webSocketAddress).Msg("Addresses configured")
+
 	rpcClient := jsonrpc.NewClientWithOpts(address, &jsonrpc.RPCClientOpts{
 		HTTPClient: client,
 	})
 
 	s := &Service{
-		ctx:     ctx,
-		client:  rpcClient,
-		address: parameters.address,
-		timeout: parameters.timeout,
+		ctx:              ctx,
+		client:           rpcClient,
+		address:          address,
+		webSocketAddress: webSocketAddress,
+		timeout:          parameters.timeout,
 	}
 
 	// Fetch static values to confirm the connection is good.
