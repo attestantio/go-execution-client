@@ -15,6 +15,7 @@ package client
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/attestantio/go-execution-client/api"
 	"github.com/attestantio/go-execution-client/spec"
@@ -29,6 +30,12 @@ type Service interface {
 
 	// Address returns the address of the client.
 	Address() string
+}
+
+// BalancesProvider is the interface for providing balances.
+type BalancesProvider interface {
+	// Balance obtains the balance for the given address at the given block ID.
+	Balance(ctx context.Context, address types.Address, blockID string) (*big.Int, error)
 }
 
 // BlockReplaysProvider is the interface for providing block replays.
@@ -52,7 +59,7 @@ type ChainHeightProvider interface {
 // EventsProvider is the interface for providing events.
 type EventsProvider interface {
 	// Events returns the events matching the filter.
-	Events(ctx context.Context, filter *api.EventsFilter) ([]*spec.TransactionEvent, error)
+	Events(ctx context.Context, filter *api.EventsFilter) ([]*spec.BerlinTransactionEvent, error)
 }
 
 // IssuanceProvider is the interface for providing issuance.
@@ -88,5 +95,5 @@ type TransactionsProvider interface {
 // TransactionReceiptsProvider is the interface for providing transaction receipts.
 type TransactionReceiptsProvider interface {
 	// TransactionReceipt returns the transaction receipt for the given transaction hash.
-	TransactionReceipt(ctx context.Context, hash types.Hash) (*spec.TransactionReceipt, error)
+	TransactionReceipt(ctx context.Context, hash types.Hash) (*spec.BerlinTransactionReceipt, error)
 }

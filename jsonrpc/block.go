@@ -25,7 +25,7 @@ import (
 
 // Block returns the block given an ID
 func (s *Service) Block(ctx context.Context, blockID string) (*spec.Block, error) {
-	if blockID == "" {
+	if blockID == "" || blockID == "latest" {
 		return s.blockAtHeight(ctx, -1)
 	}
 	if strings.HasPrefix(blockID, "0x") {
@@ -39,20 +39,17 @@ func (s *Service) Block(ctx context.Context, blockID string) (*spec.Block, error
 }
 
 func (s *Service) blockAtHash(ctx context.Context, hash string) (*spec.Block, error) {
-	var block spec.LondonBlock
+	var block spec.Block
 
 	if err := s.client.CallFor(&block, "eth_getBlockByHash", hash, true); err != nil {
 		return nil, err
 	}
 
-	return &spec.Block{
-		Version: spec.DataVersionPreMerge,
-		London:  &block,
-	}, nil
+	return &block, nil
 }
 
 func (s *Service) blockAtHeight(ctx context.Context, height int64) (*spec.Block, error) {
-	var block spec.LondonBlock
+	var block spec.Block
 
 	if height == -1 {
 		if err := s.client.CallFor(&block, "eth_getBlockByNumber", "latest", true); err != nil {
@@ -64,8 +61,5 @@ func (s *Service) blockAtHeight(ctx context.Context, height int64) (*spec.Block,
 		}
 	}
 
-	return &spec.Block{
-		Version: spec.DataVersionPreMerge,
-		London:  &block,
-	}, nil
+	return &block, nil
 }

@@ -34,7 +34,7 @@ func (s *Service) blockIDToHeight(ctx context.Context, blockID string) (int64, e
 		if block == nil {
 			return -1, errors.New("block not found")
 		}
-		height = int64(block.London.Number)
+		height = int64(block.Berlin.Number)
 	default:
 		var err error
 		height, err = strconv.ParseInt(blockID, 10, 64)

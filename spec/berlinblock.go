@@ -27,9 +27,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// LondonBlock contains a block after the London hardfork.
-type LondonBlock struct {
-	BaseFeePerGas    uint64
+// BerlinBlock contains a block after the Berlin hardfork.
+type BerlinBlock struct {
 	Difficulty       uint64
 	ExtraData        []byte
 	GasLimit         uint32
@@ -52,9 +51,8 @@ type LondonBlock struct {
 	Uncles           []types.Hash
 }
 
-// londonBlockJSON is the spec representation of the struct.
-type londonBlockJSON struct {
-	BaseFeePerGas    string         `json:"baseFeePerGas"`
+// berlinBlockJSON is the spec representation of the struct.
+type berlinBlockJSON struct {
 	Difficulty       string         `json:"difficulty"`
 	ExtraData        string         `json:"extraData"`
 	GasLimit         string         `json:"gasLimit"`
@@ -78,14 +76,13 @@ type londonBlockJSON struct {
 }
 
 // MarshalJSON implements json.Marshaler.
-func (b *LondonBlock) MarshalJSON() ([]byte, error) {
+func (b *BerlinBlock) MarshalJSON() ([]byte, error) {
 	uncles := make([]string, 0, len(b.Uncles))
 	for _, uncle := range b.Uncles {
 		uncles = append(uncles, fmt.Sprintf("%#x", uncle))
 	}
 
-	return json.Marshal(&londonBlockJSON{
-		BaseFeePerGas:    util.MarshalUint64(b.BaseFeePerGas),
+	return json.Marshal(&berlinBlockJSON{
 		Difficulty:       util.MarshalUint64(b.Difficulty),
 		ExtraData:        util.MarshalByteArray(b.ExtraData),
 		GasLimit:         util.MarshalUint32(b.GasLimit),
@@ -111,22 +108,14 @@ func (b *LondonBlock) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements json.Unmarshaler.
 // nolint:gocyclo
-func (b *LondonBlock) UnmarshalJSON(input []byte) error {
-	var data londonBlockJSON
+func (b *BerlinBlock) UnmarshalJSON(input []byte) error {
+	var data berlinBlockJSON
 	if err := json.Unmarshal(input, &data); err != nil {
 		return errors.Wrap(err, "invalid JSON")
 	}
 
 	var success bool
 	var err error
-
-	// Although base fee per gas is required in London, this also covers pre-London blocks so it is considered optional.
-	if data.BaseFeePerGas != "" {
-		b.BaseFeePerGas, err = strconv.ParseUint(util.PreUnmarshalHexString(data.BaseFeePerGas), 16, 64)
-		if err != nil {
-			return errors.Wrap(err, "base fee per gas invalid")
-		}
-	}
 
 	if data.Difficulty == "" {
 		return errors.New("difficulty missing")
@@ -302,7 +291,7 @@ func (b *LondonBlock) UnmarshalJSON(input []byte) error {
 }
 
 // String returns a string version of the structure.
-func (b *LondonBlock) String() string {
+func (b *BerlinBlock) String() string {
 	data, err := json.Marshal(b)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)

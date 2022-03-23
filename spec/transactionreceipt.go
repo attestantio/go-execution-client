@@ -1,4 +1,4 @@
-// Copyright © 2021 Attestant Limited.
+// Copyright © 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,266 +15,232 @@ package spec
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/attestantio/go-execution-client/types"
-	"github.com/attestantio/go-execution-client/util"
-	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 )
 
-// TransactionReceipt contains a transaction receipt.
+// TransactionReceipt is a struct that covers all transaction receipt versions.
 type TransactionReceipt struct {
-	BlockHash         types.Hash
-	BlockNumber       uint32
-	ContractAddress   *types.Address
-	CumulativeGasUsed uint32
-	From              types.Address
-	GasUsed           uint32
-	Logs              []*TransactionEvent
-	LogsBloom         []byte
-	Status            uint32
-	To                *types.Address
-	TransactionHash   types.Hash
-	TransactionIndex  uint32
-	Type              uint32
+	Fork                     Fork
+	BerlinTransactionReceipt *BerlinTransactionReceipt
+	LondonTransactionReceipt *LondonTransactionReceipt
 }
 
-// transactionReceiptJSON is the spec representation of the struct.
+// transactionReceiptJSON is a simple struct to fetch the transaction type.
 type transactionReceiptJSON struct {
-	BlockHash         string              `json:"blockHash"`
-	BlockNumber       string              `json:"blockNumber"`
-	ContractAddress   string              `json:"contractAddress,omitempty"`
-	CumulativeGasUsed string              `json:"cumulativeGasUsed"`
-	From              string              `json:"from"`
-	GasUsed           string              `json:"gasUsed"`
-	Logs              []*TransactionEvent `json:"logs"`
-	LogsBloom         string              `json:"logsBloom"`
-	Status            string              `json:"status"`
-	To                string              `json:"to"`
-	TransactionHash   string              `json:"transactionHash"`
-	TransactionIndex  string              `json:"transactionIndex"`
-	Type              string              `json:"type"`
+	EffectiveGasPrice string `json:"effectiveGasPrice"`
 }
 
-// transactionReceiptYAML is the spec representation of the struct.
-type transactionReceiptYAML struct {
-	BlockHash         string              `yaml:"blockHash"`
-	BlockNumber       uint32              `yaml:"blockNumber"`
-	ContractAddress   string              `yaml:"contractAddress,omitempty"`
-	CumulativeGasUsed uint32              `yaml:"cumulativeGasUsed"`
-	From              string              `yaml:"from"`
-	GasUsed           uint32              `yaml:"gasUsed"`
-	Logs              []*TransactionEvent `yaml:"logs"`
-	LogsBloom         string              `yaml:"logsBloom"`
-	Status            uint32              `yaml:"status"`
-	To                string              `yaml:"to"`
-	TransactionHash   string              `yaml:"transactionHash"`
-	TransactionIndex  uint32              `yaml:"transactionNumber"`
-	Type              uint32              `yaml:"type"`
-}
-
-// MarshalJSON implements json.Marshaler.
+// MarshalJSON marshals a typed transaction.
 func (t *TransactionReceipt) MarshalJSON() ([]byte, error) {
-	contractAddress := ""
-	if t.ContractAddress != nil {
-		contractAddress = util.MarshalNullableAddress((*t.ContractAddress)[:])
+	switch t.Fork {
+	case ForkBerlin:
+		return json.Marshal(t.BerlinTransactionReceipt)
+	case ForkLondon:
+		return json.Marshal(t.LondonTransactionReceipt)
+	default:
+		return nil, fmt.Errorf("unhandled transaction receipt fork %v", t.Fork)
 	}
-	to := ""
-	if t.To != nil {
-		to = util.MarshalNullableAddress(t.To[:])
-	}
-	return json.Marshal(&transactionReceiptJSON{
-		BlockHash:         util.MarshalByteArray(t.BlockHash[:]),
-		BlockNumber:       util.MarshalUint32(t.BlockNumber),
-		ContractAddress:   contractAddress,
-		CumulativeGasUsed: util.MarshalUint32(t.CumulativeGasUsed),
-		From:              util.MarshalByteArray(t.From[:]),
-		GasUsed:           util.MarshalUint32(t.GasUsed),
-		Logs:              t.Logs,
-		LogsBloom:         util.MarshalByteArray(t.LogsBloom),
-		Status:            util.MarshalUint32(t.Status),
-		To:                to,
-		TransactionHash:   util.MarshalByteArray(t.TransactionHash[:]),
-		TransactionIndex:  util.MarshalUint32(t.TransactionIndex),
-		Type:              util.MarshalUint32(t.Type),
-	})
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (t *TransactionReceipt) UnmarshalJSON(input []byte) error {
 	var data transactionReceiptJSON
-	if err := json.Unmarshal(input, &data); err != nil {
+	err := json.Unmarshal(input, &data)
+	if err != nil {
 		return errors.Wrap(err, "invalid JSON")
 	}
 
-	return t.unpack(&data)
+	if data.EffectiveGasPrice == "" {
+		t.Fork = ForkBerlin
+		t.BerlinTransactionReceipt = &BerlinTransactionReceipt{}
+		err = json.Unmarshal(input, t.BerlinTransactionReceipt)
+	} else {
+		t.Fork = ForkLondon
+		t.LondonTransactionReceipt = &LondonTransactionReceipt{}
+		err = json.Unmarshal(input, t.LondonTransactionReceipt)
+	}
+
+	return err
 }
 
-func (t *TransactionReceipt) unpack(data *transactionReceiptJSON) error {
-	var err error
-
-	if data.BlockHash == "" {
-		return errors.New("block hash missing")
+// BlockHash returns the block hash of the transaction receipt.
+func (t *TransactionReceipt) BlockHash() types.Hash {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.BlockHash
+	case ForkLondon:
+		return t.LondonTransactionReceipt.BlockHash
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
-	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.BlockHash))
-	if err != nil {
-		return errors.Wrap(err, "block hash invalid")
-	}
-	copy(t.BlockHash[:], hash)
-
-	if data.BlockNumber == "" {
-		return errors.New("block number missing")
-	}
-	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.BlockNumber), 16, 32)
-	if err != nil {
-		return errors.Wrap(err, "block number invalid")
-	}
-	t.BlockNumber = uint32(tmp)
-
-	if data.ContractAddress != "" {
-		address, err := hex.DecodeString(util.PreUnmarshalHexString(data.ContractAddress))
-		if err != nil {
-			return errors.Wrap(err, "contract address invalid")
-		}
-		var contractAddress types.Address
-		copy(contractAddress[:], address)
-		t.ContractAddress = &contractAddress
-	}
-
-	if data.CumulativeGasUsed == "" {
-		return errors.New("cumulative gas used missing")
-	}
-	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.CumulativeGasUsed), 16, 32)
-	if err != nil {
-		return errors.Wrap(err, "cumulative gas used invalid")
-	}
-	t.CumulativeGasUsed = uint32(tmp)
-
-	if data.From == "" {
-		return errors.New("from missing")
-	}
-	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.From))
-	if err != nil {
-		return errors.Wrap(err, "from invalid")
-	}
-	copy(t.From[:], address)
-
-	if data.GasUsed == "" {
-		return errors.New("gas used missing")
-	}
-	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.GasUsed), 16, 32)
-	if err != nil {
-		return errors.Wrap(err, "gas used invalid")
-	}
-	t.GasUsed = uint32(tmp)
-
-	t.Logs = data.Logs
-
-	if data.LogsBloom == "" {
-		return errors.New("logs bloom missing")
-	}
-	t.LogsBloom, err = hex.DecodeString(util.PreUnmarshalHexString(data.LogsBloom))
-	if err != nil {
-		return errors.Wrap(err, "logs bloom invalid")
-	}
-
-	if data.Status == "" {
-		return errors.New("status missing")
-	}
-	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Status), 16, 32)
-	if err != nil {
-		return errors.Wrap(err, "status invalid")
-	}
-	t.Status = uint32(tmp)
-
-	if data.To != "" {
-		address, err = hex.DecodeString(util.PreUnmarshalHexString(data.To))
-		if err != nil {
-			return errors.Wrap(err, "to invalid")
-		}
-		var to types.Address
-		copy(to[:], address)
-		t.To = &to
-	}
-
-	if data.TransactionHash == "" {
-		return errors.New("transaction hash missing")
-	}
-	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.TransactionHash))
-	if err != nil {
-		return errors.Wrap(err, "transaction hash invalid")
-	}
-	copy(t.TransactionHash[:], hash)
-
-	if data.TransactionIndex == "" {
-		return errors.New("transaction index missing")
-	}
-	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.TransactionIndex), 16, 32)
-	if err != nil {
-		return errors.Wrap(err, "transaction index invalid")
-	}
-	t.TransactionIndex = uint32(tmp)
-
-	if data.Type == "" {
-		return errors.New("type missing")
-	}
-	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Type), 16, 32)
-	if err != nil {
-		return errors.Wrap(err, "type invalid")
-	}
-	t.Type = uint32(tmp)
-
-	return nil
 }
 
-// MarshalYAML implements yaml.Marshaler.
-func (t *TransactionReceipt) MarshalYAML() ([]byte, error) {
-	contractAddress := ""
-	if t.ContractAddress != nil {
-		contractAddress = util.MarshalNullableAddress((*t.ContractAddress)[:])
+// BlockNumber returns the block number of the transaction receipt.
+func (t *TransactionReceipt) BlockNumber() uint32 {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.BlockNumber
+	case ForkLondon:
+		return t.LondonTransactionReceipt.BlockNumber
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
-	to := ""
-	if t.To != nil {
-		to = util.MarshalNullableAddress(t.To[:])
-	}
-	yamlBytes, err := yaml.MarshalWithOptions(&transactionReceiptYAML{
-		BlockHash:         fmt.Sprintf("%#x", t.BlockHash),
-		BlockNumber:       t.BlockNumber,
-		ContractAddress:   contractAddress,
-		CumulativeGasUsed: t.CumulativeGasUsed,
-		From:              fmt.Sprintf("%#x", t.From),
-		GasUsed:           t.GasUsed,
-		Logs:              t.Logs,
-		LogsBloom:         fmt.Sprintf("%#x", t.LogsBloom),
-		Status:            t.Status,
-		To:                to,
-		TransactionHash:   fmt.Sprintf("%#x", t.TransactionHash),
-		TransactionIndex:  t.TransactionIndex,
-		Type:              t.Type,
-	}, yaml.Flow(true))
-	if err != nil {
-		return nil, err
-	}
-	return bytes.ReplaceAll(yamlBytes, []byte(`"`), []byte(`'`)), nil
 }
 
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (t *TransactionReceipt) UnmarshalYAML(input []byte) error {
-	// We unmarshal to the JSON struct to save on duplicate code.
-	var transactionReceiptJSON transactionReceiptJSON
-	if err := yaml.Unmarshal(input, &transactionReceiptJSON); err != nil {
-		return err
+// ContractAddress returns the contract address of the transaction receipt.
+// This will be nil for transactions that did not create a contract.
+func (t *TransactionReceipt) ContractAddress() *types.Address {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.ContractAddress
+	case ForkLondon:
+		return t.LondonTransactionReceipt.ContractAddress
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
-	return t.unpack(&transactionReceiptJSON)
+}
+
+// CumulativeGasUsed returns the cumulative gas used in the block up to this receipt.
+func (t *TransactionReceipt) CumulativeGasUsed() uint32 {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.CumulativeGasUsed
+	case ForkLondon:
+		return t.LondonTransactionReceipt.CumulativeGasUsed
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// EffectiveGasPrice returns the effective gas price of the transaction.
+// This will return 0 for pre-London transactions.
+func (t *TransactionReceipt) EffectiveGasPrice() uint64 {
+	switch t.Fork {
+	case ForkBerlin:
+		return 0
+	case ForkLondon:
+		return t.LondonTransactionReceipt.EffectiveGasPrice
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// From returns the sender of the transaction receipt.
+func (t *TransactionReceipt) From() types.Address {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.From
+	case ForkLondon:
+		return t.LondonTransactionReceipt.From
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// GasUsed returns the gas used by the transaction.
+func (t *TransactionReceipt) GasUsed() uint32 {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.GasUsed
+	case ForkLondon:
+		return t.LondonTransactionReceipt.GasUsed
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// Logs returns the logs generated by the transaction.
+func (t *TransactionReceipt) Logs() []*BerlinTransactionEvent {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.Logs
+	case ForkLondon:
+		return t.LondonTransactionReceipt.Logs
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// LogsBloom returns the logs bloom generated by the transaction.
+func (t *TransactionReceipt) LogsBloom() []byte {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.LogsBloom
+	case ForkLondon:
+		return t.LondonTransactionReceipt.LogsBloom
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// Status returns the status returned by the transaction.
+func (t *TransactionReceipt) Status() uint32 {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.Status
+	case ForkLondon:
+		return t.LondonTransactionReceipt.Status
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// To returns the recipient of the transaction receipt.
+// This value will be nil for contract creation.
+func (t *TransactionReceipt) To() *types.Address {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.To
+	case ForkLondon:
+		return t.LondonTransactionReceipt.To
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// TransactionHash returns the hash of the transaction.
+func (t *TransactionReceipt) TransactionHash() types.Hash {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.TransactionHash
+	case ForkLondon:
+		return t.LondonTransactionReceipt.TransactionHash
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// TransactionIndex returns the index of the transaction in the block.
+func (t *TransactionReceipt) TransactionIndex() uint32 {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.TransactionIndex
+	case ForkLondon:
+		return t.LondonTransactionReceipt.TransactionIndex
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// Type returns the type of the transaction in the block.
+func (t *TransactionReceipt) Type() TransactionType {
+	switch t.Fork {
+	case ForkBerlin:
+		return t.BerlinTransactionReceipt.Type
+	case ForkLondon:
+		return t.LondonTransactionReceipt.Type
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
 }
 
 // String returns a string version of the structure.
 func (t *TransactionReceipt) String() string {
-	data, err := yaml.Marshal(t)
+	data, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}

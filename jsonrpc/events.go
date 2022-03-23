@@ -22,12 +22,12 @@ import (
 )
 
 // Events returns the events matching the filter.
-func (s *Service) Events(ctx context.Context, filter *api.EventsFilter) ([]*spec.TransactionEvent, error) {
+func (s *Service) Events(ctx context.Context, filter *api.EventsFilter) ([]*spec.BerlinTransactionEvent, error) {
 	if filter == nil {
 		return nil, errors.New("filter not specified")
 	}
 
-	var events []*spec.TransactionEvent
+	var events []*spec.BerlinTransactionEvent
 
 	if err := s.client.CallFor(&events, "eth_getLogs", []interface{}{filter}); err != nil {
 		return nil, err

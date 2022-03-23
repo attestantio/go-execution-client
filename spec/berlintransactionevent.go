@@ -22,12 +22,11 @@ import (
 
 	"github.com/attestantio/go-execution-client/types"
 	"github.com/attestantio/go-execution-client/util"
-	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 )
 
-// TransactionEvent contains a transaction event.
-type TransactionEvent struct {
+// BerlinTransactionEvent contains a transaction event.
+type BerlinTransactionEvent struct {
 	Address          types.Address
 	BlockHash        types.Hash
 	BlockNumber      uint32
@@ -39,40 +38,28 @@ type TransactionEvent struct {
 	TransactionIndex uint32
 }
 
-// transactionEventJSON is the spec representation of the struct.
-type transactionEventJSON struct {
+// berlinTransactionEventJSON is the spec representation of the struct.
+// Non-alphabetical ordering to match JSON-RPC output.
+type berlinTransactionEventJSON struct {
 	Address          string   `json:"address"`
-	BlockHash        string   `json:"blockHash"`
-	BlockNumber      string   `json:"blockNumber"`
-	Data             string   `json:"data"`
-	Index            string   `json:"logIndex"`
-	Removed          bool     `json:"removed"`
 	Topics           []string `json:"topics"`
+	Data             string   `json:"data"`
+	BlockNumber      string   `json:"blockNumber"`
 	TransactionHash  string   `json:"transactionHash"`
 	TransactionIndex string   `json:"transactionIndex"`
-}
-
-// transactionEventYAML is the spec representation of the struct.
-type transactionEventYAML struct {
-	Address          string   `yaml:"address"`
-	BlockHash        string   `yaml:"blockHash"`
-	BlockNumber      uint32   `yaml:"blockNumber"`
-	Data             string   `yaml:"data"`
-	Index            uint32   `yaml:"index"`
-	Removed          bool     `yaml:"removed"`
-	Topics           []string `yaml:"topics"`
-	TransactionHash  string   `yaml:"transactionHash"`
-	TransactionIndex uint32   `yaml:"transactionNumber"`
+	BlockHash        string   `json:"blockHash"`
+	Index            string   `json:"logIndex"`
+	Removed          bool     `json:"removed"`
 }
 
 // MarshalJSON implements json.Marshaler.
-func (t *TransactionEvent) MarshalJSON() ([]byte, error) {
+func (t *BerlinTransactionEvent) MarshalJSON() ([]byte, error) {
 	topics := make([]string, 0, len(t.Topics))
 	for _, topic := range t.Topics {
 		topics = append(topics, util.MarshalByteArray(topic[:]))
 	}
 
-	return json.Marshal(&transactionEventJSON{
+	return json.Marshal(&berlinTransactionEventJSON{
 		Address:          util.MarshalAddress(t.Address[:]),
 		BlockHash:        util.MarshalByteArray(t.BlockHash[:]),
 		BlockNumber:      util.MarshalUint32(t.BlockNumber),
@@ -86,8 +73,8 @@ func (t *TransactionEvent) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (t *TransactionEvent) UnmarshalJSON(input []byte) error {
-	var data transactionEventJSON
+func (t *BerlinTransactionEvent) UnmarshalJSON(input []byte) error {
+	var data berlinTransactionEventJSON
 	if err := json.Unmarshal(input, &data); err != nil {
 		return errors.Wrap(err, "invalid JSON")
 	}
@@ -95,7 +82,7 @@ func (t *TransactionEvent) UnmarshalJSON(input []byte) error {
 	return t.unpack(&data)
 }
 
-func (t *TransactionEvent) unpack(data *transactionEventJSON) error {
+func (t *BerlinTransactionEvent) unpack(data *berlinTransactionEventJSON) error {
 	var err error
 
 	if data.Address == "" {
@@ -125,12 +112,11 @@ func (t *TransactionEvent) unpack(data *transactionEventJSON) error {
 	}
 	t.BlockNumber = uint32(tmp)
 
-	if data.Data == "" {
-		return errors.New("data missing")
-	}
-	t.Data, err = hex.DecodeString(util.PreUnmarshalHexString(data.Data))
-	if err != nil {
-		return errors.Wrap(err, "data invalid")
+	if len(data.Data) > 0 {
+		t.Data, err = hex.DecodeString(util.PreUnmarshalHexString(data.Data))
+		if err != nil {
+			return errors.Wrap(err, "data invalid")
+		}
 	}
 	if len(t.Data) == 0 {
 		t.Data = nil
@@ -178,43 +164,9 @@ func (t *TransactionEvent) unpack(data *transactionEventJSON) error {
 	return nil
 }
 
-// MarshalYAML implements yaml.Marshaler.
-func (t *TransactionEvent) MarshalYAML() ([]byte, error) {
-	topics := make([]string, 0, len(t.Topics))
-	for _, topic := range t.Topics {
-		topics = append(topics, fmt.Sprintf("%#x", topic))
-	}
-
-	yamlBytes, err := yaml.MarshalWithOptions(&transactionEventYAML{
-		TransactionHash:  fmt.Sprintf("%#x", t.TransactionHash),
-		TransactionIndex: t.TransactionIndex,
-		BlockHash:        fmt.Sprintf("%#x", t.BlockHash),
-		BlockNumber:      t.BlockNumber,
-		Removed:          t.Removed,
-		Index:            t.Index,
-		Address:          fmt.Sprintf("%#x", t.Address),
-		Data:             fmt.Sprintf("%#x", t.Data),
-		Topics:           topics,
-	}, yaml.Flow(true))
-	if err != nil {
-		return nil, err
-	}
-	return bytes.ReplaceAll(yamlBytes, []byte(`"`), []byte(`'`)), nil
-}
-
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (t *TransactionEvent) UnmarshalYAML(input []byte) error {
-	// We unmarshal to the JSON struct to save on duplicate code.
-	var transactionEventJSON transactionEventJSON
-	if err := yaml.Unmarshal(input, &transactionEventJSON); err != nil {
-		return err
-	}
-	return t.unpack(&transactionEventJSON)
-}
-
 // String returns a string version of the structure.
-func (t *TransactionEvent) String() string {
-	data, err := yaml.Marshal(t)
+func (t *BerlinTransactionEvent) String() string {
+	data, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}

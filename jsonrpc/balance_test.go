@@ -20,12 +20,12 @@ import (
 
 	execclient "github.com/attestantio/go-execution-client"
 	"github.com/attestantio/go-execution-client/jsonrpc"
+	"github.com/attestantio/go-execution-client/types"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 )
 
-// TestTransaction tests the Transaction() call.
-func TestTransaction(t *testing.T) {
+func TestBalance(t *testing.T) {
 	ctx := context.Background()
 	s, err := jsonrpc.New(ctx,
 		jsonrpc.WithLogLevel(zerolog.Disabled),
@@ -34,9 +34,29 @@ func TestTransaction(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	txHash := strToHash("0xc9e58c3c7cfd290033b37576feb1649b9609e1ad49fe1fd23148423bb2b44bd2")
-	tx, err := s.(execclient.TransactionsProvider).Transaction(ctx, txHash)
-	require.NoError(t, err)
-	require.NotNil(t, tx)
-	require.Equal(t, tx.Hash(), txHash)
+	tests := []struct {
+		name    string
+		blockID string
+		address types.Address
+		err     string
+	}{
+		{
+			name: "Latest",
+		},
+		{
+			name:    "15100",
+			blockID: "15100",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := s.(execclient.BalancesProvider).Balance(ctx, test.address, test.blockID)
+			if test.err != "" {
+				require.EqualError(t, err, test.err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

@@ -1,4 +1,4 @@
-// Copyright © 2021 Attestant Limited.
+// Copyright © 2021, 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,27 +11,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jsonrpc
+package spec_test
 
 import (
-	"context"
-	"fmt"
+	"encoding/hex"
+	"strings"
 
-	"github.com/attestantio/go-execution-client/spec"
 	"github.com/attestantio/go-execution-client/types"
-	"github.com/pkg/errors"
 )
 
-// TransactionReceipt returns the transaction receipt for the given transaction hash.
-func (s *Service) TransactionReceipt(ctx context.Context, hash types.Hash) (*spec.BerlinTransactionReceipt, error) {
-	if len(hash) == 0 {
-		return nil, errors.New("hash nil")
+func address(input string) *types.Address {
+	tmp, err := hex.DecodeString(strings.TrimPrefix(input, "0x"))
+	if err != nil {
+		panic(err)
 	}
+	res := types.Address{}
+	copy(res[:], tmp)
+	return &res
+}
 
-	var receipt spec.BerlinTransactionReceipt
-	if err := s.client.CallFor(&receipt, "eth_getTransactionReceipt", fmt.Sprintf("%#x", hash)); err != nil {
-		return nil, err
+func byteslice(input string) []byte {
+	res, err := hex.DecodeString(strings.TrimPrefix(input, "0x"))
+	if err != nil {
+		panic(err)
 	}
-
-	return &receipt, nil
+	return res
 }

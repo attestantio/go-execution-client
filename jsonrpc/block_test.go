@@ -20,12 +20,14 @@ import (
 
 	execclient "github.com/attestantio/go-execution-client"
 	"github.com/attestantio/go-execution-client/jsonrpc"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBlock(t *testing.T) {
 	ctx := context.Background()
 	s, err := jsonrpc.New(ctx,
+		jsonrpc.WithLogLevel(zerolog.Disabled),
 		jsonrpc.WithAddress(os.Getenv("JSONRPC_ADDRESS")),
 		jsonrpc.WithTimeout(timeout),
 	)

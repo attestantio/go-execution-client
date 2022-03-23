@@ -1,4 +1,4 @@
-// Copyright © 2021 Attestant Limited.
+// Copyright © 2021, 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/attestantio/go-execution-client/spec"
-	"github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/require"
 )
 
@@ -84,16 +83,8 @@ func TestAccessListEntryJSON(t *testing.T) {
 				rt, err := json.Marshal(&res)
 				require.NoError(t, err)
 				require.Equal(t, string(test.input), string(rt))
+				require.Equal(t, string(test.input), res.String())
 			}
 		})
 	}
-}
-
-func TestAccessListEntryYAML(t *testing.T) {
-	input := `{"address":"0xceff51756c56ceffca006cd410b03ffc46dd3a58","storageKeys":["0x0000000000000000000000000000000000000000000000000000000000000008","0x0000000000000000000000000000000000000000000000000000000000000009","0x0000000000000000000000000000000000000000000000000000000000000007","0x000000000000000000000000000000000000000000000000000000000000000a","0x000000000000000000000000000000000000000000000000000000000000000c","0x0000000000000000000000000000000000000000000000000000000000000006"]}`
-	expected := `{address: '0xceff51756c56ceffca006cd410b03ffc46dd3a58', storageKeys: ['0x0000000000000000000000000000000000000000000000000000000000000008', '0x0000000000000000000000000000000000000000000000000000000000000009', '0x0000000000000000000000000000000000000000000000000000000000000007', '0x000000000000000000000000000000000000000000000000000000000000000a', '0x000000000000000000000000000000000000000000000000000000000000000c', '0x0000000000000000000000000000000000000000000000000000000000000006']}`
-
-	var res spec.AccessListEntry
-	require.NoError(t, yaml.Unmarshal([]byte(input), &res))
-	require.Equal(t, expected, res.String())
 }

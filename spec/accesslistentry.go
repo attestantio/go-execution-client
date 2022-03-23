@@ -1,4 +1,4 @@
-// Copyright © 2021 Attestant Limited.
+// Copyright © 2021, 2022 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/attestantio/go-execution-client/util"
-	"github.com/goccy/go-yaml"
 	"github.com/pkg/errors"
 )
 
@@ -34,12 +33,6 @@ type AccessListEntry struct {
 type accessListEntryJSON struct {
 	Address     string   `json:"address"`
 	StorageKeys []string `json:"storageKeys"`
-}
-
-// accessListEntryYAML is the spec representation of the struct.
-type accessListEntryYAML struct {
-	Address     string   `yaml:"address"`
-	StorageKeys []string `yaml:"storageKeys"`
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -88,35 +81,9 @@ func (a *AccessListEntry) unpack(data *accessListEntryJSON) error {
 	return nil
 }
 
-// MarshalYAML implements yaml.Marshaler.
-func (a *AccessListEntry) MarshalYAML() ([]byte, error) {
-	storageKeys := make([]string, 0, len(a.StorageKeys))
-	for _, storageKey := range a.StorageKeys {
-		storageKeys = append(storageKeys, util.MarshalByteArray(storageKey))
-	}
-	yamlBytes, err := yaml.MarshalWithOptions(&accessListEntryYAML{
-		Address:     util.MarshalByteArray(a.Address),
-		StorageKeys: storageKeys,
-	}, yaml.Flow(true))
-	if err != nil {
-		return nil, err
-	}
-	return bytes.ReplaceAll(yamlBytes, []byte(`"`), []byte(`'`)), nil
-}
-
-// UnmarshalYAML implements yaml.Unmarshaler.
-func (a *AccessListEntry) UnmarshalYAML(input []byte) error {
-	// We unmarshal to the JSON struct to save on duplicate code.
-	var accessListEntryJSON accessListEntryJSON
-	if err := yaml.Unmarshal(input, &accessListEntryJSON); err != nil {
-		return err
-	}
-	return a.unpack(&accessListEntryJSON)
-}
-
 // String returns a string version of the structure.
 func (a *AccessListEntry) String() string {
-	data, err := yaml.Marshal(a)
+	data, err := json.Marshal(a)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
