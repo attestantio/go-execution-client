@@ -146,7 +146,7 @@ func TestType2Funcs(t *testing.T) {
 func TestUnknownFuncs(t *testing.T) {
 	tx := spec.Transaction{}
 
-	assert.Panics(t, func() { tx.AccessList() })
+	assert.Nil(t, tx.AccessList())
 	assert.Panics(t, func() { tx.BlockHash() })
 	assert.Panics(t, func() { tx.BlockNumber() })
 	assert.Panics(t, func() { tx.From() })
@@ -154,8 +154,8 @@ func TestUnknownFuncs(t *testing.T) {
 	assert.Panics(t, func() { tx.GasPrice() })
 	assert.Panics(t, func() { tx.Hash() })
 	assert.Panics(t, func() { tx.Input() })
-	assert.Panics(t, func() { tx.MaxFeePerGas() })
-	assert.Panics(t, func() { tx.MaxPriorityFeePerGas() })
+	assert.Equal(t, tx.MaxFeePerGas(), uint64(0))
+	assert.Equal(t, tx.MaxPriorityFeePerGas(), uint64(0))
 	assert.Panics(t, func() { tx.Nonce() })
 	assert.Panics(t, func() { tx.R() })
 	assert.Panics(t, func() { tx.S() })
