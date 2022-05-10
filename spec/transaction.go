@@ -60,8 +60,6 @@ func (t *Transaction) UnmarshalJSON(input []byte) error {
 
 	t.Type = data.Type
 	switch t.Type {
-	case TransactionTypeUnknown:
-		return errors.New("type missing")
 	case TransactionType0:
 		t.Type0Transaction = &Type0Transaction{}
 		err = json.Unmarshal(input, t.Type0Transaction)

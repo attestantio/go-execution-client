@@ -203,9 +203,6 @@ func (t *BerlinTransactionReceipt) unpack(data *berlinTransactionReceiptJSON) er
 	}
 	t.TransactionIndex = uint32(tmp)
 
-	if data.Type == TransactionTypeUnknown {
-		return errors.New("transaction type unrecognised")
-	}
 	t.Type = data.Type
 
 	return nil

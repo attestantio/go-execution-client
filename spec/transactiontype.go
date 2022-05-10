@@ -16,18 +16,14 @@ package spec
 import (
 	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // TransactionType defines the spec version of a transaction.
 type TransactionType int
 
 const (
-	// TransactionTypeUnknown is an unknon transaction.
-	TransactionTypeUnknown TransactionType = iota
 	// TransactionType0 is a legacy transaction.
-	TransactionType0
+	TransactionType0 TransactionType = iota
 	// TransactionType1 is an access list transaction.
 	TransactionType1
 	// TransactionType2 is an EIP-1559 transaction.
@@ -35,7 +31,6 @@ const (
 )
 
 var transactionTypeStrings = [...]string{
-	"unknown",
 	"0x0",
 	"0x1",
 	"0x2",
@@ -48,13 +43,9 @@ func (d *TransactionType) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (d *TransactionType) UnmarshalJSON(input []byte) error {
-	if len(input) == 0 {
-		return errors.New("type missing")
-	}
-
 	var err error
 	switch strings.ToLower(strings.Trim(string(input), `"`)) {
-	case "0", "0x", "0x0":
+	case "", "0", "0x", "0x0":
 		*d = TransactionType0
 	case "1", "0x1":
 		*d = TransactionType1

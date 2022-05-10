@@ -126,7 +126,7 @@ func (t *Type1Transaction) unpack(data *type1TransactionJSON) error {
 
 	// Guard to ensure we are unpacking the correct transaction type.
 	if data.Type == "" {
-		return errors.New("type missing")
+		return errors.New("type missing for type 1 transaction")
 	}
 	if data.Type != "0x1" {
 		return errors.New("type incorrect")
