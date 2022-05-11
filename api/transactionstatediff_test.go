@@ -62,6 +62,26 @@ func TestTransactionStateDiff(t *testing.T) {
 			input:    []byte(`{"balance":{"*":{"from":"0x1d53ae02be969d05","to":"0x1d0ddce00eb7500a"}},"code":"=","nonce":{"*":{"from":"0x397","to":"0x398"}},"storage":{}}`),
 			expected: []byte(`{"balance":{"*":{"from":"0x1d53ae02be969d05","to":"0x1d0ddce00eb7500a"}},"nonce":{"*":{"from":"0x397","to":"0x398"}}}`),
 		},
+		{
+			name:     "GoodNewBalance",
+			input:    []byte(`{"balance":{"+":"0x1d53ae02be969d05"},"code":"=","nonce":{"+":"0x0"}}`),
+			expected: []byte(`{"balance":{"+":"0x1d53ae02be969d05"},"nonce":{"+":"0x0"}}`),
+		},
+		{
+			name:     "GoodNoChanges",
+			input:    []byte(`{"balance":"=","code":"=","nonce":"="}`),
+			expected: []byte(`{}`),
+		},
+		{
+			name:     "GoodSelfDestruct",
+			input:    []byte(`{"balance":{"*":{"from":"0x1","to":null}},"code":{"*":{"from":"0x608060405260","to":null}},"nonce":{"*":{"from":"0x1","to":null}}}`),
+			expected: []byte(`{"balance":{"-":"0x1"},"nonce":{"-":"0x1"}}`),
+		},
+		{
+			name:     "GoodSelfDestructCanonical",
+			input:    []byte(`{"balance":{"-":"0x1"},"code":{"-":"0x608060405260"},"nonce":{"-":"0x1"}}`),
+			expected: []byte(`{"balance":{"-":"0x1"},"nonce":{"-":"0x1"}}`),
+		},
 	}
 
 	for _, test := range tests {

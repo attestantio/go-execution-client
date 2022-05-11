@@ -89,14 +89,18 @@ func (t *TransactionStateChange) unpack(data *transactionStateChangeJSON) error 
 	}
 
 	if data.Alteration != nil {
-		t.From, err = util.StrToBigInt("from", data.Alteration.From)
-		if err != nil {
-			return err
+		if data.Alteration.From != "" {
+			t.From, err = util.StrToBigInt("from", data.Alteration.From)
+			if err != nil {
+				return err
+			}
 		}
 
-		t.To, err = util.StrToBigInt("to", data.Alteration.To)
-		if err != nil {
-			return err
+		if data.Alteration.To != "" {
+			t.To, err = util.StrToBigInt("to", data.Alteration.To)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
