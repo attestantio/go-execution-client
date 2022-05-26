@@ -56,6 +56,12 @@ type ChainHeightProvider interface {
 	ChainHeight(ctx context.Context) (uint32, error)
 }
 
+// ChainIDProvider is the interface for providing the chain ID.
+type ChainIDProvider interface {
+	// ChainID returns the chain ID.
+	ChainID(ctx context.Context) (uint64, error)
+}
+
 // EventsProvider is the interface for providing events.
 type EventsProvider interface {
 	// Events returns the events matching the filter.
