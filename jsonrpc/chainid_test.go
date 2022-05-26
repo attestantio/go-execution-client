@@ -15,7 +15,6 @@ package jsonrpc_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -37,5 +36,4 @@ func TestChainID(t *testing.T) {
 	id, err := s.(execclient.ChainIDProvider).ChainID(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, id)
-	fmt.Printf("%d\n", id)
 }
