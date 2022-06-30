@@ -26,7 +26,7 @@ func (s *Service) ChainID(ctx context.Context) (uint64, error) {
 		return 0, err
 	}
 
-	res, err := strconv.ParseUint(strings.TrimPrefix(version, "0x"), 10, 64)
+	res, err := strconv.ParseUint(strings.TrimPrefix(version, "0x"), 16, 64)
 	if err != nil {
 		return 0, err
 	}
