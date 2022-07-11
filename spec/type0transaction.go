@@ -168,7 +168,7 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	}
 	t.GasPrice, err = strconv.ParseUint(util.PreUnmarshalHexString(data.GasPrice), 16, 64)
 	if err != nil {
-		return errors.Wrap(err, "gas price invalid")
+		return errors.Wrap(err, fmt.Sprintf("gas price for %s invalid", data.Hash))
 	}
 
 	if data.Hash == "" {

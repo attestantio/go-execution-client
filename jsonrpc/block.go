@@ -42,7 +42,7 @@ func (s *Service) blockAtHash(ctx context.Context, hash string) (*spec.Block, er
 	var block spec.Block
 
 	if err := s.client.CallFor(&block, "eth_getBlockByHash", hash, true); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, fmt.Sprintf("eth_getBlockByHash for %#x failed", hash))
 	}
 
 	return &block, nil
@@ -53,11 +53,11 @@ func (s *Service) blockAtHeight(ctx context.Context, height int64) (*spec.Block,
 
 	if height == -1 {
 		if err := s.client.CallFor(&block, "eth_getBlockByNumber", "latest", true); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "eth_getBlockByNumber for latest failed")
 		}
 	} else {
 		if err := s.client.CallFor(&block, "eth_getBlockByNumber", fmt.Sprintf("0x%x", height), true); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, fmt.Sprintf("eth_getBlockByNumber for 0x%x failed", height))
 		}
 	}
 

@@ -123,10 +123,6 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 // fetchStaticValues fetches values that never change.
 // This caches the values, avoiding future API calls.
 func (s *Service) fetchStaticValues(ctx context.Context) error {
-	if _, err := s.NetworkID(ctx); err != nil {
-		return errors.Wrap(err, "failed to fetch network ID")
-	}
-
 	return nil
 }
 
