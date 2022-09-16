@@ -96,6 +96,9 @@ type SyncingProvider interface {
 type TransactionsProvider interface {
 	// Transaction returns the transaction for the given transaction hash.
 	Transaction(ctx context.Context, hash types.Hash) (*spec.Transaction, error)
+
+	// TransactionInBlock returns the transaction for the given transaction in a block at the given index.
+	TransactionInBlock(ctx context.Context, blockHash types.Hash, index uint32) (*spec.Transaction, error)
 }
 
 // TransactionReceiptsProvider is the interface for providing transaction receipts.
