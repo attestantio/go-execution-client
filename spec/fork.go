@@ -30,12 +30,15 @@ const (
 	ForkBerlin
 	// ForkLondon is the London fork.
 	ForkLondon
+	// ForkShanghai is the Shanghai fork.
+	ForkShanghai
 )
 
 var forkStrings = [...]string{
 	"unknown",
 	"berlin",
 	"london",
+	"shanghai",
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -51,6 +54,8 @@ func (d *Fork) UnmarshalJSON(input []byte) error {
 
 	var err error
 	switch strings.ToLower(strings.Trim(string(input), `"`)) {
+	case "shanghai":
+		*d = ForkShanghai
 	case "berlin":
 		*d = ForkBerlin
 	case "london":

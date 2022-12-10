@@ -39,7 +39,7 @@ func (t *TransactionReceipt) MarshalJSON() ([]byte, error) {
 	switch t.Fork {
 	case ForkBerlin:
 		return json.Marshal(t.BerlinTransactionReceipt)
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return json.Marshal(t.LondonTransactionReceipt)
 	default:
 		return nil, fmt.Errorf("unhandled transaction receipt fork %v", t.Fork)
@@ -72,7 +72,7 @@ func (t *TransactionReceipt) BlockHash() types.Hash {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.BlockHash
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.BlockHash
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -84,7 +84,7 @@ func (t *TransactionReceipt) BlockNumber() uint32 {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.BlockNumber
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.BlockNumber
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -97,7 +97,7 @@ func (t *TransactionReceipt) ContractAddress() *types.Address {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.ContractAddress
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.ContractAddress
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -109,7 +109,7 @@ func (t *TransactionReceipt) CumulativeGasUsed() uint32 {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.CumulativeGasUsed
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.CumulativeGasUsed
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -122,7 +122,7 @@ func (t *TransactionReceipt) EffectiveGasPrice() uint64 {
 	switch t.Fork {
 	case ForkBerlin:
 		return 0
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.EffectiveGasPrice
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -134,7 +134,7 @@ func (t *TransactionReceipt) From() types.Address {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.From
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.From
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -146,7 +146,7 @@ func (t *TransactionReceipt) GasUsed() uint32 {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.GasUsed
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.GasUsed
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -158,7 +158,7 @@ func (t *TransactionReceipt) Logs() []*BerlinTransactionEvent {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.Logs
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.Logs
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -170,7 +170,7 @@ func (t *TransactionReceipt) LogsBloom() []byte {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.LogsBloom
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.LogsBloom
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -182,7 +182,7 @@ func (t *TransactionReceipt) Status() uint32 {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.Status
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.Status
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -195,7 +195,7 @@ func (t *TransactionReceipt) To() *types.Address {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.To
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.To
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -207,7 +207,7 @@ func (t *TransactionReceipt) TransactionHash() types.Hash {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.TransactionHash
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.TransactionHash
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -219,7 +219,7 @@ func (t *TransactionReceipt) TransactionIndex() uint32 {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.TransactionIndex
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.TransactionIndex
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
@@ -231,7 +231,7 @@ func (t *TransactionReceipt) Type() TransactionType {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.Type
-	case ForkLondon:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.Type
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
