@@ -61,7 +61,7 @@ func (b *Block) UnmarshalJSON(input []byte) error {
 	}
 
 	switch {
-	case len(data.Withdrawals) > 0:
+	case data.Withdrawals != nil:
 		b.Fork = ForkShanghai
 		b.Shanghai = &ShanghaiBlock{}
 		err = json.Unmarshal(input, b.Shanghai)
