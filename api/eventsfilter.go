@@ -28,7 +28,7 @@ type EventsFilter struct {
 	FromBlock string
 	ToBlock   string
 	Address   *types.Address
-	Topics    *[]types.Hash
+	Topics    []types.Hash
 }
 
 // eventsFilterJSON is the spec representation of the struct.
@@ -49,13 +49,12 @@ func (e *EventsFilter) MarshalJSON() ([]byte, error) {
 	if e.Address != nil {
 		eventsFilterJSON.Address = util.MarshalAddress((*e.Address)[:])
 	}
-	if e.Topics != nil {
-		topics := make([]string, 0, len(*e.Topics))
-		for _, topic := range *e.Topics {
-			topics = append(topics, util.MarshalByteArray(topic[:]))
-		}
-		eventsFilterJSON.Topics = topics
+
+	topics := make([]string, 0, len(e.Topics))
+	for _, topic := range e.Topics {
+		topics = append(topics, util.MarshalByteArray(topic[:]))
 	}
+	eventsFilterJSON.Topics = topics
 
 	return json.Marshal(eventsFilterJSON)
 }
@@ -116,7 +115,7 @@ func (e *EventsFilter) unpack(data *eventsFilterJSON) error {
 				return err
 			}
 		}
-		e.Topics = &topics
+		e.Topics = topics
 	}
 
 	return nil
