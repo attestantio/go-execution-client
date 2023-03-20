@@ -16,6 +16,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/attestantio/go-execution-client/types"
 	"github.com/attestantio/go-execution-client/util"
@@ -24,8 +25,8 @@ import (
 
 // EventsFilter contains the events filter.
 type EventsFilter struct {
-	FromBlock *uint32
-	ToBlock   *uint32
+	FromBlock string
+	ToBlock   string
 	Address   *types.Address
 	Topics    *[]types.Hash
 }
@@ -40,14 +41,11 @@ type eventsFilterJSON struct {
 
 // MarshalJSON implements json.Marshaler.
 func (e *EventsFilter) MarshalJSON() ([]byte, error) {
-	eventsFilterJSON := &eventsFilterJSON{}
+	eventsFilterJSON := &eventsFilterJSON{
+		FromBlock: e.FromBlock,
+		ToBlock:   e.ToBlock,
+	}
 
-	if e.FromBlock != nil {
-		eventsFilterJSON.FromBlock = util.MarshalUint32(*e.FromBlock)
-	}
-	if e.ToBlock != nil {
-		eventsFilterJSON.ToBlock = util.MarshalUint32(*e.ToBlock)
-	}
 	if e.Address != nil {
 		eventsFilterJSON.Address = util.MarshalAddress((*e.Address)[:])
 	}
@@ -73,20 +71,32 @@ func (e *EventsFilter) UnmarshalJSON(input []byte) error {
 }
 
 func (e *EventsFilter) unpack(data *eventsFilterJSON) error {
-	if data.FromBlock != "" {
-		fromBlock, err := util.StrToUint32("from block", data.FromBlock)
-		if err != nil {
+	switch strings.ToLower(data.FromBlock) {
+	case "":
+		// Nothing to do.
+	case "pending", "latest", "safe", "finalized":
+		// State name.
+		e.FromBlock = data.FromBlock
+	default:
+		// Block number.
+		if _, err := util.StrToUint32("from block", data.FromBlock); err != nil {
 			return err
 		}
-		e.FromBlock = &fromBlock
+		e.FromBlock = data.FromBlock
 	}
 
-	if data.ToBlock != "" {
-		toBlock, err := util.StrToUint32("to block", data.ToBlock)
-		if err != nil {
+	switch strings.ToLower(data.ToBlock) {
+	case "":
+		// Nothing to do.
+	case "pending", "latest", "safe", "finalized":
+		// State name.
+		e.ToBlock = data.ToBlock
+	default:
+		// Block number.
+		if _, err := util.StrToUint32("to block", data.ToBlock); err != nil {
 			return err
 		}
-		e.ToBlock = &toBlock
+		e.ToBlock = data.ToBlock
 	}
 
 	if data.Address != "" {

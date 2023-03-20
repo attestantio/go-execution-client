@@ -62,6 +62,10 @@ func TestEventsFilterJSON(t *testing.T) {
 			name:  "Good",
 			input: []byte(`{"fromBlock":"0x3e8","toBlock":"0x7d0","address":"0xa700f2b3d8ebe35cef86fcc3c2105daff41617be","topics":["0x060ac38f43eaa9a6ea5d69fb296993be6072bafed76748ba5e27dd187da0b70f"]}`),
 		},
+		{
+			name:  "GoodTextBlocks",
+			input: []byte(`{"fromBlock":"finalized","toBlock":"safe","address":"0xa700f2b3d8ebe35cef86fcc3c2105daff41617be","topics":["0x060ac38f43eaa9a6ea5d69fb296993be6072bafed76748ba5e27dd187da0b70f"]}`),
+		},
 	}
 
 	for _, test := range tests {
