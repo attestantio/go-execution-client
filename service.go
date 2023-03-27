@@ -106,3 +106,20 @@ type TransactionReceiptsProvider interface {
 	// TransactionReceipt returns the transaction receipt for the given transaction hash.
 	TransactionReceipt(ctx context.Context, hash types.Hash) (*spec.BerlinTransactionReceipt, error)
 }
+
+// CallProvider is the interface for making calls to the execution client.
+type CallProvider interface {
+	// Call makes a call to the execution client.
+	Call(ctx context.Context, opts *CallOpts) ([]byte, error)
+}
+
+// CallOpts are the options to Call().
+type CallOpts struct {
+	From     *types.Address
+	To       *types.Address
+	Gas      *big.Int
+	GasPrice *big.Int
+	Value    *big.Int
+	Data     []byte
+	Block    string
+}

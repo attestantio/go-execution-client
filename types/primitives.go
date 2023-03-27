@@ -13,11 +13,76 @@
 
 package types
 
+import "fmt"
+
 // Address is a 20-byte execution layer address.
 type Address [20]byte
+
+// String returns the string representation of the address.
+func (a Address) String() string {
+	return fmt.Sprintf("%#x", a)
+}
+
+// Format formats the root.
+func (a Address) Format(state fmt.State, v rune) {
+	format := string(v)
+	switch v {
+	case 's':
+		fmt.Fprint(state, a.String())
+	case 'x', 'X':
+		if state.Flag('#') {
+			format = "#" + format
+		}
+		fmt.Fprintf(state, "%"+format, a[:])
+	default:
+		fmt.Fprintf(state, "%"+format, a[:])
+	}
+}
 
 // Hash is a 32-byte hash.
 type Hash [32]byte
 
+// String returns the string representation of the hash.
+func (h Hash) String() string {
+	return fmt.Sprintf("%#x", h)
+}
+
+// Format formats the hash.
+func (h Hash) Format(state fmt.State, v rune) {
+	format := string(v)
+	switch v {
+	case 's':
+		fmt.Fprint(state, h.String())
+	case 'x', 'X':
+		if state.Flag('#') {
+			format = "#" + format
+		}
+		fmt.Fprintf(state, "%"+format, h[:])
+	default:
+		fmt.Fprintf(state, "%"+format, h[:])
+	}
+}
+
 // Root is a 32-byte merkle root.
 type Root [32]byte
+
+// String returns the string representation of the root.
+func (r Root) String() string {
+	return fmt.Sprintf("%#x", r)
+}
+
+// Format formats the root.
+func (r Root) Format(state fmt.State, v rune) {
+	format := string(v)
+	switch v {
+	case 's':
+		fmt.Fprint(state, r.String())
+	case 'x', 'X':
+		if state.Flag('#') {
+			format = "#" + format
+		}
+		fmt.Fprintf(state, "%"+format, r[:])
+	default:
+		fmt.Fprintf(state, "%"+format, r[:])
+	}
+}
