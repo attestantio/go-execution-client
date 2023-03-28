@@ -20,13 +20,26 @@ import (
 	"strings"
 
 	"github.com/attestantio/go-execution-client/spec"
+	"github.com/attestantio/go-execution-client/util"
 	"github.com/pkg/errors"
 )
 
+var blockIdentifiers = map[string]struct{}{
+	"earliest":  {},
+	"latest":    {},
+	"pending":   {},
+	"safe":      {},
+	"finalized": {},
+}
+
 // Block returns the block given an ID
 func (s *Service) Block(ctx context.Context, blockID string) (*spec.Block, error) {
-	if blockID == "" || blockID == "latest" {
+	if blockID == "" ||
+		blockID == "latest" {
 		return s.blockAtHeight(ctx, -1)
+	}
+	if _, isIdentifier := blockIdentifiers[blockID]; isIdentifier {
+		return s.blockAtIdentifier(ctx, blockID)
 	}
 	if strings.HasPrefix(blockID, "0x") {
 		return s.blockAtHash(ctx, blockID)
@@ -48,18 +61,19 @@ func (s *Service) blockAtHash(ctx context.Context, hash string) (*spec.Block, er
 	return &block, nil
 }
 
-func (s *Service) blockAtHeight(ctx context.Context, height int64) (*spec.Block, error) {
+func (s *Service) blockAtIdentifier(ctx context.Context, id string) (*spec.Block, error) {
 	var block spec.Block
 
-	if height == -1 {
-		if err := s.client.CallFor(&block, "eth_getBlockByNumber", "latest", true); err != nil {
-			return nil, errors.Wrap(err, "eth_getBlockByNumber for latest failed")
-		}
-	} else {
-		if err := s.client.CallFor(&block, "eth_getBlockByNumber", fmt.Sprintf("0x%x", height), true); err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("eth_getBlockByNumber for 0x%x failed", height))
-		}
+	if err := s.client.CallFor(&block, "eth_getBlockByNumber", id, true); err != nil {
+		return nil, errors.Wrapf(err, "eth_getBlockByNumber for %s failed", id)
 	}
 
 	return &block, nil
+}
+
+func (s *Service) blockAtHeight(ctx context.Context, height int64) (*spec.Block, error) {
+	if height == -1 {
+		return s.blockAtIdentifier(ctx, "latest")
+	}
+	return s.blockAtIdentifier(ctx, util.MarshalInt64(height))
 }

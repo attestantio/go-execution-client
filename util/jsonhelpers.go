@@ -40,6 +40,14 @@ func PreUnmarshalHexString(input string) string {
 	return res
 }
 
+// MarshalInt64 marshals an int64 as per the Ethereum standard.
+func MarshalInt64(input int64) string {
+	if input == 0 {
+		return "0x0"
+	}
+	return fmt.Sprintf("0x%s", strings.TrimPrefix(fmt.Sprintf("%x", input), "0"))
+}
+
 // MarshalUint64 marshals a uint64 as per the Ethereum standard.
 func MarshalUint64(input uint64) string {
 	if input == 0 {
