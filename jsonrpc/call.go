@@ -25,7 +25,7 @@ import (
 )
 
 // Call makes a call to the execution client.
-func (s *Service) Call(ctx context.Context, opts *execclient.CallOpts) ([]byte, error) {
+func (s *Service) Call(_ context.Context, opts *execclient.CallOpts) ([]byte, error) {
 	if opts == nil {
 		return nil, errors.New("no options specified")
 	}

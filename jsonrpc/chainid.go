@@ -20,7 +20,7 @@ import (
 )
 
 // ChainID returns the chain ID of the node.
-func (s *Service) ChainID(ctx context.Context) (uint64, error) {
+func (s *Service) ChainID(_ context.Context) (uint64, error) {
 	version := ""
 	if err := s.client.CallFor(&version, "eth_chainId"); err != nil {
 		return 0, err

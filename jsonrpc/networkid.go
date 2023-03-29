@@ -19,7 +19,7 @@ import (
 )
 
 // NetworkID returns the network ID of the node.
-func (s *Service) NetworkID(ctx context.Context) (uint64, error) {
+func (s *Service) NetworkID(_ context.Context) (uint64, error) {
 	version := ""
 	if err := s.client.CallFor(&version, "net_version"); err != nil {
 		return 0, err

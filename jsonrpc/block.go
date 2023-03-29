@@ -51,7 +51,7 @@ func (s *Service) Block(ctx context.Context, blockID string) (*spec.Block, error
 	return s.blockAtHeight(ctx, height)
 }
 
-func (s *Service) blockAtHash(ctx context.Context, hash string) (*spec.Block, error) {
+func (s *Service) blockAtHash(_ context.Context, hash string) (*spec.Block, error) {
 	var block spec.Block
 
 	if err := s.client.CallFor(&block, "eth_getBlockByHash", hash, true); err != nil {
@@ -61,7 +61,7 @@ func (s *Service) blockAtHash(ctx context.Context, hash string) (*spec.Block, er
 	return &block, nil
 }
 
-func (s *Service) blockAtIdentifier(ctx context.Context, id string) (*spec.Block, error) {
+func (s *Service) blockAtIdentifier(_ context.Context, id string) (*spec.Block, error) {
 	var block spec.Block
 
 	if err := s.client.CallFor(&block, "eth_getBlockByNumber", id, true); err != nil {

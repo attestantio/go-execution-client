@@ -27,6 +27,8 @@ import (
 
 // NewPendingTransactions returns a subscription for pending transactions.
 func (s *Service) NewPendingTransactions(ctx context.Context, ch chan *spec.Transaction) (*util.Subscription, error) {
+	// This is closed in closeSocketOnCtxDone(), so...
+	//nolint:bodyclose
 	conn, _, err := websocket.DefaultDialer.Dial(s.webSocketAddress, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to connect to server")
@@ -94,6 +96,10 @@ func (s *Service) closeSocketOnCtxDone(ctx context.Context, conn *websocket.Conn
 	// Close the connection.
 	err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to send websocket close message")
+		return
+	}
+	if err := conn.Close(); err != nil {
 		log.Error().Err(err).Msg("Failed to close websocket")
 		return
 	}

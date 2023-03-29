@@ -57,7 +57,7 @@ func (s *Service) balanceAtHash(ctx context.Context,
 	return s.balanceAtHash(ctx, address, fmt.Sprintf("%#x", block.Hash()))
 }
 
-func (s *Service) balanceAtHeight(ctx context.Context,
+func (s *Service) balanceAtHeight(_ context.Context,
 	address types.Address,
 	height int64,
 ) (

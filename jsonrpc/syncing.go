@@ -20,7 +20,7 @@ import (
 )
 
 // Syncing obtains information about the sync state of the node.
-func (s *Service) Syncing(ctx context.Context) (*api.SyncState, error) {
+func (s *Service) Syncing(_ context.Context) (*api.SyncState, error) {
 	var syncState api.SyncState
 	if err := s.client.CallFor(&syncState, "eth_syncing"); err != nil {
 		return nil, err

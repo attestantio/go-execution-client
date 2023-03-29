@@ -23,7 +23,7 @@ import (
 )
 
 // Transaction returns the transaction for the given transaction hash.
-func (s *Service) Transaction(ctx context.Context, hash types.Hash) (*spec.Transaction, error) {
+func (s *Service) Transaction(_ context.Context, hash types.Hash) (*spec.Transaction, error) {
 	if len(hash) == 0 {
 		return nil, errors.New("hash nil")
 	}

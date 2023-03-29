@@ -34,7 +34,7 @@ func (s *Service) Issuance(ctx context.Context, blockID string) (*api.Issuance, 
 	return s.issuanceAtHeight(ctx, height)
 }
 
-func (s *Service) issuanceAtHeight(ctx context.Context, height int64) (*api.Issuance, error) {
+func (s *Service) issuanceAtHeight(_ context.Context, height int64) (*api.Issuance, error) {
 	var issuance api.Issuance
 
 	if height == -1 {

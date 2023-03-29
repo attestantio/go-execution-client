@@ -20,8 +20,7 @@ import (
 )
 
 // ChainHeight returns the height of the chain as understood by the node.
-func (s *Service) ChainHeight(ctx context.Context) (uint32, error) {
-
+func (s *Service) ChainHeight(_ context.Context) (uint32, error) {
 	res := ""
 	if err := s.client.CallFor(&res, "eth_blockNumber"); err != nil {
 		return 0, err

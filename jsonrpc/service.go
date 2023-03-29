@@ -30,9 +30,6 @@ import (
 
 // Service is an Ethereum execution client service.
 type Service struct {
-	// Hold the initialising context to use for streams.
-	ctx context.Context
-
 	address          string
 	webSocketAddress string
 	client           jsonrpc.RPCClient
@@ -93,7 +90,6 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 	})
 
 	s := &Service{
-		ctx:              ctx,
 		client:           rpcClient,
 		address:          address,
 		webSocketAddress: webSocketAddress,
@@ -122,7 +118,7 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 
 // fetchStaticValues fetches values that never change.
 // This caches the values, avoiding future API calls.
-func (s *Service) fetchStaticValues(ctx context.Context) error {
+func (s *Service) fetchStaticValues(_ context.Context) error {
 	return nil
 }
 

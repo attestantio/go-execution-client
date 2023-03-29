@@ -35,7 +35,7 @@ func (s *Service) ReplayBlockTransactions(ctx context.Context, blockID string) (
 	return s.replayBlockTransactions(ctx, height)
 }
 
-func (s *Service) replayBlockTransactions(ctx context.Context, height int64) ([]*api.TransactionResult, error) {
+func (s *Service) replayBlockTransactions(_ context.Context, height int64) ([]*api.TransactionResult, error) {
 	var transactionResults []*api.TransactionResult
 
 	log.Trace().Int64("height", height).Msg("Replaying block transactions")

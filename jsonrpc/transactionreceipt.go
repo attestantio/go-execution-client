@@ -23,7 +23,7 @@ import (
 )
 
 // TransactionReceipt returns the transaction receipt for the given transaction hash.
-func (s *Service) TransactionReceipt(ctx context.Context, hash types.Hash) (*spec.BerlinTransactionReceipt, error) {
+func (s *Service) TransactionReceipt(_ context.Context, hash types.Hash) (*spec.BerlinTransactionReceipt, error) {
 	if len(hash) == 0 {
 		return nil, errors.New("hash nil")
 	}

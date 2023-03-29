@@ -23,7 +23,7 @@ import (
 )
 
 // TransactionInBlock returns the transaction for the given transaction in a block at the given index.
-func (s *Service) TransactionInBlock(ctx context.Context, blockHash types.Hash, index uint32) (*spec.Transaction, error) {
+func (s *Service) TransactionInBlock(_ context.Context, blockHash types.Hash, index uint32) (*spec.Transaction, error) {
 	if len(blockHash) == 0 {
 		return nil, errors.New("hash nil")
 	}
