@@ -1,4 +1,4 @@
-// Copyright © 2021, 2022 Attestant Limited.
+// Copyright © 2021 - 2023 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -28,12 +28,15 @@ const (
 	TransactionType1
 	// TransactionType2 is an EIP-1559 transaction.
 	TransactionType2
+	// TransactionType3 is a data blob transaction.
+	TransactionType3
 )
 
 var transactionTypeStrings = [...]string{
 	"0x0",
 	"0x1",
 	"0x2",
+	"0x3",
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -51,6 +54,8 @@ func (d *TransactionType) UnmarshalJSON(input []byte) error {
 		*d = TransactionType1
 	case "2", "0x2":
 		*d = TransactionType2
+	case "3", "0x3":
+		*d = TransactionType3
 	default:
 		err = fmt.Errorf("unrecognised transaction type %s", string(input))
 	}

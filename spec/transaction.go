@@ -1,4 +1,4 @@
-// Copyright © 2021, 2022 Attestant Limited.
+// Copyright © 2021 - 2023 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,6 +29,7 @@ type Transaction struct {
 	Type0Transaction *Type0Transaction
 	Type1Transaction *Type1Transaction
 	Type2Transaction *Type2Transaction
+	Type3Transaction *Type3Transaction
 }
 
 // transactionTypeJSON is a simple struct to fetch the transaction type.
@@ -45,6 +46,8 @@ func (t *Transaction) MarshalJSON() ([]byte, error) {
 		return json.Marshal(t.Type1Transaction)
 	case TransactionType2:
 		return json.Marshal(t.Type2Transaction)
+	case TransactionType3:
+		return json.Marshal(t.Type3Transaction)
 	default:
 		return nil, fmt.Errorf("unhandled transaction type %v", t.Type)
 	}
@@ -69,6 +72,9 @@ func (t *Transaction) UnmarshalJSON(input []byte) error {
 	case TransactionType2:
 		t.Type2Transaction = &Type2Transaction{}
 		err = json.Unmarshal(input, t.Type2Transaction)
+	case TransactionType3:
+		t.Type3Transaction = &Type3Transaction{}
+		err = json.Unmarshal(input, t.Type3Transaction)
 	default:
 		err = fmt.Errorf("unhandled transaction type %v", data.Type)
 	}
@@ -86,6 +92,8 @@ func (t *Transaction) AccessList() []*AccessListEntry {
 		return t.Type1Transaction.AccessList
 	case TransactionType2:
 		return t.Type2Transaction.AccessList
+	case TransactionType3:
+		return t.Type3Transaction.AccessList
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -101,6 +109,8 @@ func (t *Transaction) BlockHash() *types.Hash {
 		return t.Type1Transaction.BlockHash
 	case TransactionType2:
 		return t.Type2Transaction.BlockHash
+	case TransactionType3:
+		return t.Type3Transaction.BlockHash
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -116,6 +126,8 @@ func (t *Transaction) BlockNumber() *uint32 {
 		return t.Type1Transaction.BlockNumber
 	case TransactionType2:
 		return t.Type2Transaction.BlockNumber
+	case TransactionType3:
+		return t.Type3Transaction.BlockNumber
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -130,6 +142,8 @@ func (t *Transaction) From() types.Address {
 		return t.Type1Transaction.From
 	case TransactionType2:
 		return t.Type2Transaction.From
+	case TransactionType3:
+		return t.Type3Transaction.From
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -144,6 +158,8 @@ func (t *Transaction) Gas() uint32 {
 		return t.Type1Transaction.Gas
 	case TransactionType2:
 		return t.Type2Transaction.Gas
+	case TransactionType3:
+		return t.Type3Transaction.Gas
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -160,6 +176,8 @@ func (t *Transaction) GasPrice() uint64 {
 		return t.Type1Transaction.GasPrice
 	case TransactionType2:
 		return 0
+	case TransactionType3:
+		return 0
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -174,6 +192,8 @@ func (t *Transaction) Hash() types.Hash {
 		return t.Type1Transaction.Hash
 	case TransactionType2:
 		return t.Type2Transaction.Hash
+	case TransactionType3:
+		return t.Type3Transaction.Hash
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -188,6 +208,8 @@ func (t *Transaction) Input() []byte {
 		return t.Type1Transaction.Input
 	case TransactionType2:
 		return t.Type2Transaction.Input
+	case TransactionType3:
+		return t.Type3Transaction.Input
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -203,6 +225,8 @@ func (t *Transaction) MaxFeePerGas() uint64 {
 		return 0
 	case TransactionType2:
 		return t.Type2Transaction.MaxFeePerGas
+	case TransactionType3:
+		return t.Type3Transaction.MaxFeePerGas
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -218,6 +242,8 @@ func (t *Transaction) MaxPriorityFeePerGas() uint64 {
 		return 0
 	case TransactionType2:
 		return t.Type2Transaction.MaxPriorityFeePerGas
+	case TransactionType3:
+		return t.Type3Transaction.MaxPriorityFeePerGas
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -232,6 +258,8 @@ func (t *Transaction) Nonce() uint64 {
 		return t.Type1Transaction.Nonce
 	case TransactionType2:
 		return t.Type2Transaction.Nonce
+	case TransactionType3:
+		return t.Type3Transaction.Nonce
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -246,6 +274,8 @@ func (t *Transaction) R() *big.Int {
 		return t.Type1Transaction.R
 	case TransactionType2:
 		return t.Type2Transaction.R
+	case TransactionType3:
+		return t.Type3Transaction.R
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -260,6 +290,8 @@ func (t *Transaction) S() *big.Int {
 		return t.Type1Transaction.S
 	case TransactionType2:
 		return t.Type2Transaction.S
+	case TransactionType3:
+		return t.Type3Transaction.S
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -275,6 +307,8 @@ func (t *Transaction) To() *types.Address {
 		return t.Type1Transaction.To
 	case TransactionType2:
 		return t.Type2Transaction.To
+	case TransactionType3:
+		return t.Type3Transaction.To
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -290,6 +324,8 @@ func (t *Transaction) TransactionIndex() *uint32 {
 		return t.Type1Transaction.TransactionIndex
 	case TransactionType2:
 		return t.Type2Transaction.TransactionIndex
+	case TransactionType3:
+		return t.Type3Transaction.TransactionIndex
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -304,6 +340,8 @@ func (t *Transaction) V() *big.Int {
 		return t.Type1Transaction.V
 	case TransactionType2:
 		return t.Type2Transaction.V
+	case TransactionType3:
+		return t.Type3Transaction.V
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -318,6 +356,8 @@ func (t *Transaction) Value() *big.Int {
 		return t.Type1Transaction.Value
 	case TransactionType2:
 		return t.Type2Transaction.Value
+	case TransactionType3:
+		return t.Type3Transaction.Value
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}

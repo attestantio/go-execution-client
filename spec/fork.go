@@ -1,4 +1,4 @@
-// Copyright © 2021, 2022 Attestant Limited.
+// Copyright © 2021 - 2023 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -32,6 +32,8 @@ const (
 	ForkLondon
 	// ForkShanghai is the Shanghai fork.
 	ForkShanghai
+	// ForkCancun is the Cancun fork.
+	ForkCancun
 )
 
 var forkStrings = [...]string{
@@ -39,6 +41,7 @@ var forkStrings = [...]string{
 	"berlin",
 	"london",
 	"shanghai",
+	"cancun",
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -54,12 +57,14 @@ func (d *Fork) UnmarshalJSON(input []byte) error {
 
 	var err error
 	switch strings.ToLower(strings.Trim(string(input), `"`)) {
-	case "shanghai":
-		*d = ForkShanghai
 	case "berlin":
 		*d = ForkBerlin
 	case "london":
 		*d = ForkLondon
+	case "shanghai":
+		*d = ForkShanghai
+	case "cancun":
+		*d = ForkCancun
 	default:
 		err = fmt.Errorf("unrecognised fork version %s", string(input))
 	}

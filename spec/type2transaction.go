@@ -282,6 +282,7 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 	if data.R == "" {
 		return errors.New("r missing")
 	}
+	fmt.Printf("%v\n", data.R)
 	t.R, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.R), 16)
 	if !success {
 		return errors.New("r invalid")

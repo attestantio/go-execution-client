@@ -29,6 +29,7 @@ import (
 type Type0Transaction struct {
 	BlockHash        *types.Hash
 	BlockNumber      *uint32
+	ChainID          *uint64
 	From             types.Address
 	Gas              uint32
 	GasPrice         uint64
@@ -47,6 +48,7 @@ type Type0Transaction struct {
 type type0TransactionJSON struct {
 	BlockHash        *string `json:"blockHash"`
 	BlockNumber      *string `json:"blockNumber"`
+	ChainID          string  `json:"chainId,omitempty"`
 	From             string  `json:"from"`
 	Gas              string  `json:"gas"`
 	GasPrice         string  `json:"gasPrice"`
@@ -74,6 +76,10 @@ func (t *Type0Transaction) MarshalJSON() ([]byte, error) {
 		tmp := util.MarshalUint32(*t.BlockNumber)
 		blockNumber = &tmp
 	}
+	var chainID string
+	if t.ChainID != nil {
+		chainID = util.MarshalUint64(*t.ChainID)
+	}
 	to := ""
 	if t.To != nil {
 		to = util.MarshalByteArray(t.To[:])
@@ -86,6 +92,7 @@ func (t *Type0Transaction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&type0TransactionJSON{
 		BlockHash:        blockHash,
 		BlockNumber:      blockNumber,
+		ChainID:          chainID,
 		From:             util.MarshalByteArray(t.From[:]),
 		Gas:              util.MarshalUint32(t.Gas),
 		GasPrice:         util.MarshalUint64(t.GasPrice),
@@ -143,6 +150,14 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 		}
 		blockNumber := uint32(tmp)
 		t.BlockNumber = &blockNumber
+	}
+
+	if data.ChainID != "" {
+		chainID, err := strconv.ParseUint(util.PreUnmarshalHexString(data.ChainID), 16, 32)
+		if err != nil {
+			return errors.Wrap(err, "chain ID invalid")
+		}
+		t.ChainID = &chainID
 	}
 
 	if data.From == "" {
@@ -231,6 +246,7 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	if data.R == "" {
 		return errors.New("r missing")
 	}
+	fmt.Printf("%v\n", data.R)
 	t.R, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.R), 16)
 	if !success {
 		return errors.New("r invalid")

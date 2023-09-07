@@ -1,4 +1,4 @@
-// Copyright © 2021, 2022 Attestant Limited.
+// Copyright © 2023 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,49 +26,57 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Type1Transaction is the type 1 transaction.
-type Type1Transaction struct {
-	AccessList       []*AccessListEntry
-	BlockHash        *types.Hash
-	BlockNumber      *uint32
-	ChainID          uint64
-	From             types.Address
-	Gas              uint32
-	GasPrice         uint64
-	Hash             types.Hash
-	Input            []byte
-	Nonce            uint64
-	R                *big.Int
-	S                *big.Int
-	To               *types.Address
+// Type3Transaction is a Cancun type 3 transaction.
+type Type3Transaction struct {
+	AccessList []*AccessListEntry
+	// BlockHash is only available for transactions included in a block, so optional.
+	BlockHash *types.Hash
+	// BlockNumber is only available for transactions included in a block, so optional.
+	BlockNumber *uint32
+	ChainID     uint64
+	From        types.Address
+	Gas         uint32
+	// GasPrice is only available for transactions included in a block, so optional.
+	GasPrice             *uint64
+	Hash                 types.Hash
+	Input                []byte
+	MaxFeePerGas         uint64
+	MaxPriorityFeePerGas uint64
+	Nonce                uint64
+	R                    *big.Int
+	S                    *big.Int
+	To                   *types.Address
+	// TransactionIndex is only available for transactions included in a block, so optional.
 	TransactionIndex *uint32
 	V                *big.Int
 	Value            *big.Int
 }
 
-// type1TransactionJSON is the spec representation of a type 1 transaction.
-type type1TransactionJSON struct {
-	AccessList       []*AccessListEntry `json:"accessList"`
-	BlockHash        *string            `json:"blockHash"`
-	BlockNumber      *string            `json:"blockNumber"`
-	ChainID          string             `json:"chainId"`
-	From             string             `json:"from"`
-	Gas              string             `json:"gas"`
-	GasPrice         string             `json:"gasPrice"`
-	Hash             string             `json:"hash"`
-	Input            string             `json:"input"`
-	Nonce            string             `json:"nonce"`
-	R                string             `json:"r"`
-	S                string             `json:"s"`
-	To               string             `json:"to"`
-	TransactionIndex *string            `json:"transactionIndex"`
-	Type             string             `json:"type"`
-	V                string             `json:"v"`
-	Value            string             `json:"value"`
+// type3TransactionJSON is the spec representation of a type 3 transaction.
+type type3TransactionJSON struct {
+	AccessList           []*AccessListEntry `json:"accessList,omitempty"`
+	BlockHash            *string            `json:"blockHash,omitempty"`
+	BlockNumber          *string            `json:"blockNumber,omitempty"`
+	ChainID              string             `json:"chainId"`
+	From                 string             `json:"from"`
+	Gas                  string             `json:"gas"`
+	GasPrice             *string            `json:"gasPrice,omitempty"`
+	Hash                 string             `json:"hash"`
+	Input                string             `json:"input"`
+	MaxFeePerGas         string             `json:"maxFeePerGas"`
+	MaxPriorityFeePerGas string             `json:"maxPriorityFeePerGas"`
+	Nonce                string             `json:"nonce"`
+	R                    string             `json:"r"`
+	S                    string             `json:"s"`
+	To                   string             `json:"to"`
+	TransactionIndex     *string            `json:"transactionIndex,omitempty"`
+	Type                 string             `json:"type"`
+	V                    string             `json:"v"`
+	Value                string             `json:"value"`
 }
 
-// MarshalJSON marshals a type 1 transaction.
-func (t *Type1Transaction) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals a type 3 transaction.
+func (t *Type3Transaction) MarshalJSON() ([]byte, error) {
 	var blockHash *string
 	if t.BlockHash != nil {
 		tmp := fmt.Sprintf("%#x", *t.BlockHash)
@@ -88,30 +96,38 @@ func (t *Type1Transaction) MarshalJSON() ([]byte, error) {
 		tmp := util.MarshalUint32(*t.TransactionIndex)
 		transactionIndex = &tmp
 	}
-	return json.Marshal(&type1TransactionJSON{
-		AccessList:       t.AccessList,
-		BlockHash:        blockHash,
-		BlockNumber:      blockNumber,
-		ChainID:          util.MarshalUint64(t.ChainID),
-		From:             util.MarshalByteArray(t.From[:]),
-		Gas:              util.MarshalUint32(t.Gas),
-		GasPrice:         util.MarshalUint64(t.GasPrice),
-		Hash:             util.MarshalByteArray(t.Hash[:]),
-		Input:            util.MarshalByteArray(t.Input),
-		Nonce:            util.MarshalUint64(t.Nonce),
-		R:                util.MarshalBigInt(t.R),
-		S:                util.MarshalBigInt(t.S),
-		To:               to,
-		TransactionIndex: transactionIndex,
-		Type:             "0x1",
-		V:                util.MarshalBigInt(t.V),
-		Value:            util.MarshalBigInt(t.Value),
+	var gasPrice *string
+	if t.GasPrice != nil {
+		tmp := util.MarshalUint64(*t.GasPrice)
+		gasPrice = &tmp
+	}
+
+	return json.Marshal(&type3TransactionJSON{
+		AccessList:           t.AccessList,
+		BlockHash:            blockHash,
+		BlockNumber:          blockNumber,
+		ChainID:              util.MarshalUint64(t.ChainID),
+		From:                 util.MarshalByteArray(t.From[:]),
+		Gas:                  util.MarshalUint32(t.Gas),
+		GasPrice:             gasPrice,
+		Hash:                 util.MarshalByteArray(t.Hash[:]),
+		Input:                util.MarshalByteArray(t.Input),
+		MaxFeePerGas:         util.MarshalUint64(t.MaxFeePerGas),
+		MaxPriorityFeePerGas: util.MarshalUint64(t.MaxPriorityFeePerGas),
+		Nonce:                util.MarshalUint64(t.Nonce),
+		R:                    util.MarshalBigInt(t.R),
+		S:                    util.MarshalBigInt(t.S),
+		To:                   to,
+		Type:                 "0x2",
+		TransactionIndex:     transactionIndex,
+		V:                    util.MarshalBigInt(t.V),
+		Value:                util.MarshalBigInt(t.Value),
 	})
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (t *Type1Transaction) UnmarshalJSON(input []byte) error {
-	var data type1TransactionJSON
+func (t *Type3Transaction) UnmarshalJSON(input []byte) error {
+	var data type3TransactionJSON
 	if err := json.Unmarshal(input, &data); err != nil {
 		return errors.Wrap(err, "invalid JSON")
 	}
@@ -120,15 +136,15 @@ func (t *Type1Transaction) UnmarshalJSON(input []byte) error {
 }
 
 // nolint:gocyclo
-func (t *Type1Transaction) unpack(data *type1TransactionJSON) error {
+func (t *Type3Transaction) unpack(data *type3TransactionJSON) error {
 	var err error
 	var success bool
 
 	// Guard to ensure we are unpacking the correct transaction type.
 	if data.Type == "" {
-		return errors.New("type missing for type 1 transaction")
+		return errors.New("type missing for type 3 transaction")
 	}
-	if data.Type != "0x1" {
+	if data.Type != "0x3" {
 		return errors.New("type incorrect")
 	}
 
@@ -182,12 +198,12 @@ func (t *Type1Transaction) unpack(data *type1TransactionJSON) error {
 	}
 	t.Gas = uint32(tmp)
 
-	if data.GasPrice == "" {
-		return errors.New("gas price missing")
-	}
-	t.GasPrice, err = strconv.ParseUint(util.PreUnmarshalHexString(data.GasPrice), 16, 64)
-	if err != nil {
-		return errors.Wrap(err, "gas price invalid")
+	if data.GasPrice != nil {
+		tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(*data.GasPrice), 16, 64)
+		if err != nil {
+			return errors.Wrap(err, "gas price invalid")
+		}
+		t.GasPrice = &tmp
 	}
 
 	if data.Hash == "" {
@@ -202,6 +218,22 @@ func (t *Type1Transaction) unpack(data *type1TransactionJSON) error {
 	t.Input, err = hex.DecodeString(util.PreUnmarshalHexString(data.Input))
 	if err != nil {
 		return errors.Wrap(err, "input invalid")
+	}
+
+	if data.MaxFeePerGas == "" {
+		return errors.New("max fee per gas missing")
+	}
+	t.MaxFeePerGas, err = strconv.ParseUint(util.PreUnmarshalHexString(data.MaxFeePerGas), 16, 64)
+	if err != nil {
+		return errors.Wrap(err, "max fee per gas invalid")
+	}
+
+	if data.MaxPriorityFeePerGas == "" {
+		return errors.New("max priority fee per gas missing")
+	}
+	t.MaxPriorityFeePerGas, err = strconv.ParseUint(util.PreUnmarshalHexString(data.MaxPriorityFeePerGas), 16, 64)
+	if err != nil {
+		return errors.Wrap(err, "max priority fee per gas invalid")
 	}
 
 	if data.Nonce == "" {
@@ -268,7 +300,7 @@ func (t *Type1Transaction) unpack(data *type1TransactionJSON) error {
 }
 
 // MarshalRLP returns an RLP representation of the transaction.
-func (t *Type1Transaction) MarshalRLP() ([]byte, error) {
+func (t *Type3Transaction) MarshalRLP() ([]byte, error) {
 	// Create generic buffers, to allow reuse.
 	bufA := bytes.NewBuffer(make([]byte, 0, 1024))
 	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
@@ -276,7 +308,8 @@ func (t *Type1Transaction) MarshalRLP() ([]byte, error) {
 	// Transaction data.
 	util.RLPUint64(bufA, t.ChainID)
 	util.RLPUint64(bufA, t.Nonce)
-	util.RLPUint64(bufA, t.GasPrice)
+	util.RLPUint64(bufA, t.MaxPriorityFeePerGas)
+	util.RLPUint64(bufA, t.MaxFeePerGas)
 	util.RLPUint64(bufA, uint64(t.Gas))
 	if t.To != nil {
 		util.RLPAddress(bufA, *t.To)
@@ -312,7 +345,7 @@ func (t *Type1Transaction) MarshalRLP() ([]byte, error) {
 	util.RLPBytes(bufA, t.S.Bytes())
 
 	// EIP-2718 definition.
-	bufB.WriteByte(0x01)
+	bufB.WriteByte(0x02)
 	util.RLPList(bufB, bufA.Bytes())
 	bufA.Reset()
 	util.RLPBytes(bufA, bufB.Bytes())
@@ -320,7 +353,7 @@ func (t *Type1Transaction) MarshalRLP() ([]byte, error) {
 }
 
 // String returns a string version of the structure.
-func (t *Type1Transaction) String() string {
+func (t *Type3Transaction) String() string {
 	data, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
