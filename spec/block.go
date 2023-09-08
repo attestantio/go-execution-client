@@ -469,7 +469,7 @@ func (b *Block) WithdrawalsRoot() (types.Root, bool) {
 
 // ParentBeaconBlockRoot returns the parent beacon block root of the block.
 // This is not available in all forks, so also returns a presence flag.
-func (b *Block) ParentBeaconBlockHash() (types.Root, bool) {
+func (b *Block) ParentBeaconBlockRoot() (types.Root, bool) {
 	switch b.Fork {
 	case ForkCancun:
 		return b.Cancun.ParentBeaconBlockRoot, true
