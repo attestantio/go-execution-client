@@ -1,4 +1,4 @@
-// Copyright © 2021, 2022 Attestant Limited.
+// Copyright © 2021 - 2023 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -438,6 +438,43 @@ func (b *Block) Uncles() []types.Hash {
 		return b.Cancun.Uncles
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
+	}
+}
+
+// Withdrawals returns the withdrawals of the block.
+// This is not available in all forks, so also returns a presence flag.
+func (b *Block) Withdrawals() ([]*Withdrawal, bool) {
+	switch b.Fork {
+	case ForkShanghai:
+		return b.Shanghai.Withdrawals, true
+	case ForkCancun:
+		return b.Cancun.Withdrawals, true
+	default:
+		return nil, false
+	}
+}
+
+// WithdrawalsRoot returns the withdrawals root of the block.
+// This is not available in all forks, so also returns a presence flag.
+func (b *Block) WithdrawalsRoot() (types.Root, bool) {
+	switch b.Fork {
+	case ForkShanghai:
+		return b.Shanghai.WithdrawalsRoot, true
+	case ForkCancun:
+		return b.Cancun.WithdrawalsRoot, true
+	default:
+		return types.Root{}, false
+	}
+}
+
+// ParentBeaconBlockRoot returns the parent beacon block root of the block.
+// This is not available in all forks, so also returns a presence flag.
+func (b *Block) ParentBeaconBlockHash() (types.Root, bool) {
+	switch b.Fork {
+	case ForkCancun:
+		return b.Cancun.ParentBeaconBlockRoot, true
+	default:
+		return types.Root{}, false
 	}
 }
 
