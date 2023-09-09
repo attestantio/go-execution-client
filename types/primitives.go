@@ -1,4 +1,4 @@
-// Copyright © 2021 Attestant Limited.
+// Copyright © 2021 - 2023 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,13 @@
 
 package types
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/hex"
+	"fmt"
+
+	"github.com/pkg/errors"
+)
 
 // Address is a 20-byte execution layer address.
 type Address [20]byte
@@ -23,7 +29,7 @@ func (a Address) String() string {
 	return fmt.Sprintf("%#x", a)
 }
 
-// Format formats the root.
+// Format formats the address.
 func (a Address) Format(state fmt.State, v rune) {
 	format := string(v)
 	switch v {
@@ -61,6 +67,71 @@ func (h Hash) Format(state fmt.State, v rune) {
 	default:
 		fmt.Fprintf(state, "%"+format, h[:])
 	}
+}
+
+// VersionedHash is a 32-byte hash with the first byte being a version.
+type VersionedHash [32]byte
+
+// VersionedHashLength is the length of a versioned hash.
+const VersionedHashLength = 32
+
+// String returns the string representation of the versioned hash.
+func (h VersionedHash) String() string {
+	return fmt.Sprintf("%#x", h)
+}
+
+// Format formats the versioned hash.
+func (h VersionedHash) Format(state fmt.State, v rune) {
+	format := string(v)
+	switch v {
+	case 's':
+		fmt.Fprint(state, h.String())
+	case 'x', 'X':
+		if state.Flag('#') {
+			format = "#" + format
+		}
+		fmt.Fprintf(state, "%"+format, h[:])
+	default:
+		fmt.Fprintf(state, "%"+format, h[:])
+	}
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (h *VersionedHash) UnmarshalJSON(input []byte) error {
+	if len(input) == 0 {
+		return errors.New("input missing")
+	}
+
+	if !bytes.HasPrefix(input, []byte{'"', '0', 'x'}) {
+		return errors.New("invalid prefix")
+	}
+	if !bytes.HasSuffix(input, []byte{'"'}) {
+		return errors.New("invalid suffix")
+	}
+	if len(input) != 1+2+VersionedHashLength*2+1 {
+		return errors.New("incorrect length")
+	}
+
+	length, err := hex.Decode(h[:], input[3:3+VersionedHashLength*2])
+	if err != nil {
+		return errors.Wrapf(err, "invalid value %s", string(input[3:3+VersionedHashLength*2]))
+	}
+
+	if length != VersionedHashLength {
+		return errors.New("incorrect length")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler.
+func (h VersionedHash) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"%#x"`, h)), nil
+}
+
+// MarshalYAML implements yaml.Marshaler.
+func (r Root) MarshalYAML() ([]byte, error) {
+	return []byte(fmt.Sprintf(`'%#x'`, r)), nil
 }
 
 // Root is a 32-byte merkle root.
