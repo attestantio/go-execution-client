@@ -43,10 +43,4 @@ func TestNewPendingTransactions(t *testing.T) {
 	// Wait to see a transaction.
 	tx := <-ch
 	require.NotNil(t, tx)
-	//		// TODO remove.
-	//		{
-	//			data, err := json.Marshal(tx)
-	//			require.NoError(t, err)
-	//			fmt.Printf("%s\n", string(data))
-	//		}
 }
