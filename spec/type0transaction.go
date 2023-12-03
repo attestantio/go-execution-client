@@ -29,7 +29,7 @@ import (
 type Type0Transaction struct {
 	BlockHash        *types.Hash
 	BlockNumber      *uint32
-	ChainID          *uint64
+	ChainID          *big.Int
 	From             types.Address
 	Gas              uint32
 	GasPrice         uint64
@@ -78,7 +78,7 @@ func (t *Type0Transaction) MarshalJSON() ([]byte, error) {
 	}
 	var chainID string
 	if t.ChainID != nil {
-		chainID = util.MarshalUint64(*t.ChainID)
+		chainID = util.MarshalBigInt(t.ChainID)
 	}
 	to := ""
 	if t.To != nil {
@@ -153,11 +153,10 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	}
 
 	if data.ChainID != "" {
-		chainID, err := strconv.ParseUint(util.PreUnmarshalHexString(data.ChainID), 16, 32)
-		if err != nil {
-			return errors.Wrap(err, "chain ID invalid")
+		t.ChainID, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.ChainID), 16)
+		if !success {
+			return errors.New("chain ID invalid")
 		}
-		t.ChainID = &chainID
 	}
 
 	if data.From == "" {
@@ -246,7 +245,6 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	if data.R == "" {
 		return errors.New("r missing")
 	}
-	fmt.Printf("%v\n", data.R)
 	t.R, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.R), 16)
 	if !success {
 		return errors.New("r invalid")

@@ -29,17 +29,23 @@ import (
 // Type3Transaction is a Cancun type 3 transaction.
 type Type3Transaction struct {
 	AccessList []*AccessListEntry
+	// BlobGasPrice is only available for transactions included in a block, so optional.
+	BlobGasPrice *uint64
+	// BlobGasUsed is only available for transactions included in a block, so optional.
+	BlobGasUsed         *uint32
+	BlobVersionedHashes []types.VersionedHash
 	// BlockHash is only available for transactions included in a block, so optional.
 	BlockHash *types.Hash
 	// BlockNumber is only available for transactions included in a block, so optional.
 	BlockNumber *uint32
-	ChainID     uint64
+	ChainID     *big.Int
 	From        types.Address
 	Gas         uint32
 	// GasPrice is only available for transactions included in a block, so optional.
 	GasPrice             *uint64
 	Hash                 types.Hash
 	Input                []byte
+	MaxFeePerBlobGas     uint64
 	MaxFeePerGas         uint64
 	MaxPriorityFeePerGas uint64
 	Nonce                uint64
@@ -54,25 +60,30 @@ type Type3Transaction struct {
 
 // type3TransactionJSON is the spec representation of a type 3 transaction.
 type type3TransactionJSON struct {
-	AccessList           []*AccessListEntry `json:"accessList,omitempty"`
-	BlockHash            *string            `json:"blockHash,omitempty"`
-	BlockNumber          *string            `json:"blockNumber,omitempty"`
-	ChainID              string             `json:"chainId"`
-	From                 string             `json:"from"`
-	Gas                  string             `json:"gas"`
-	GasPrice             *string            `json:"gasPrice,omitempty"`
-	Hash                 string             `json:"hash"`
-	Input                string             `json:"input"`
-	MaxFeePerGas         string             `json:"maxFeePerGas"`
-	MaxPriorityFeePerGas string             `json:"maxPriorityFeePerGas"`
-	Nonce                string             `json:"nonce"`
-	R                    string             `json:"r"`
-	S                    string             `json:"s"`
-	To                   string             `json:"to"`
-	TransactionIndex     *string            `json:"transactionIndex,omitempty"`
-	Type                 string             `json:"type"`
-	V                    string             `json:"v"`
-	Value                string             `json:"value"`
+	AccessList           []*AccessListEntry    `json:"accessList"`
+	BlobGasPrice         *string               `json:"blobGasPrice,omitempty"`
+	BlobGasUsed          *string               `json:"blobGasUsed,omitempty"`
+	BlobVersionedHashes  []types.VersionedHash `json:"blobVersionedHashes"`
+	BlockHash            *string               `json:"blockHash,omitempty"`
+	BlockNumber          *string               `json:"blockNumber,omitempty"`
+	ChainID              string                `json:"chainId"`
+	From                 string                `json:"from"`
+	Gas                  string                `json:"gas"`
+	GasPrice             *string               `json:"gasPrice,omitempty"`
+	Hash                 string                `json:"hash"`
+	Input                string                `json:"input"`
+	MaxFeePerBlobGas     string                `json:"maxFeePerBlobGas"`
+	MaxFeePerGas         string                `json:"maxFeePerGas"`
+	MaxPriorityFeePerGas string                `json:"maxPriorityFeePerGas"`
+	Nonce                string                `json:"nonce"`
+	R                    string                `json:"r"`
+	S                    string                `json:"s"`
+	To                   string                `json:"to"`
+	TransactionIndex     *string               `json:"transactionIndex,omitempty"`
+	Type                 string                `json:"type"`
+	V                    string                `json:"v"`
+	Value                string                `json:"value"`
+	YParity              string                `json:"yParity,omitempty"`
 }
 
 // MarshalJSON marshals a type 3 transaction.
@@ -101,27 +112,42 @@ func (t *Type3Transaction) MarshalJSON() ([]byte, error) {
 		tmp := util.MarshalUint64(*t.GasPrice)
 		gasPrice = &tmp
 	}
+	var blobGasPrice *string
+	if t.BlobGasPrice != nil {
+		tmp := util.MarshalUint64(*t.BlobGasPrice)
+		blobGasPrice = &tmp
+	}
+	var blobGasUsed *string
+	if t.BlobGasUsed != nil {
+		tmp := util.MarshalUint32(*t.BlobGasUsed)
+		blobGasUsed = &tmp
+	}
 
 	return json.Marshal(&type3TransactionJSON{
 		AccessList:           t.AccessList,
+		BlobGasPrice:         blobGasPrice,
+		BlobGasUsed:          blobGasUsed,
+		BlobVersionedHashes:  t.BlobVersionedHashes,
 		BlockHash:            blockHash,
 		BlockNumber:          blockNumber,
-		ChainID:              util.MarshalUint64(t.ChainID),
+		ChainID:              util.MarshalBigInt(t.ChainID),
 		From:                 util.MarshalByteArray(t.From[:]),
 		Gas:                  util.MarshalUint32(t.Gas),
 		GasPrice:             gasPrice,
 		Hash:                 util.MarshalByteArray(t.Hash[:]),
 		Input:                util.MarshalByteArray(t.Input),
+		MaxFeePerBlobGas:     util.MarshalUint64(t.MaxFeePerBlobGas),
 		MaxFeePerGas:         util.MarshalUint64(t.MaxFeePerGas),
 		MaxPriorityFeePerGas: util.MarshalUint64(t.MaxPriorityFeePerGas),
 		Nonce:                util.MarshalUint64(t.Nonce),
 		R:                    util.MarshalBigInt(t.R),
 		S:                    util.MarshalBigInt(t.S),
 		To:                   to,
-		Type:                 "0x2",
+		Type:                 "0x3",
 		TransactionIndex:     transactionIndex,
 		V:                    util.MarshalBigInt(t.V),
 		Value:                util.MarshalBigInt(t.Value),
+		YParity:              util.MarshalUint64(t.V.Uint64()),
 	})
 }
 
@@ -153,6 +179,28 @@ func (t *Type3Transaction) unpack(data *type3TransactionJSON) error {
 		t.AccessList = make([]*AccessListEntry, 0)
 	}
 
+	if data.BlobGasPrice != nil {
+		tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(*data.BlobGasPrice), 16, 64)
+		if err != nil {
+			return errors.Wrap(err, "blob gas price invalid")
+		}
+		t.BlobGasPrice = &tmp
+	}
+
+	if data.BlobGasUsed != nil {
+		tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(*data.BlobGasUsed), 16, 32)
+		if err != nil {
+			return errors.Wrap(err, "blob gas used invalid")
+		}
+		blobGasUsed := uint32(tmp)
+		t.BlobGasUsed = &blobGasUsed
+	}
+
+	t.BlobVersionedHashes = data.BlobVersionedHashes
+	if t.BlobVersionedHashes == nil {
+		t.BlobVersionedHashes = make([]types.VersionedHash, 0)
+	}
+
 	if data.BlockHash != nil {
 		hash, err := hex.DecodeString(util.PreUnmarshalHexString(*data.BlockHash))
 		if err != nil {
@@ -175,9 +223,9 @@ func (t *Type3Transaction) unpack(data *type3TransactionJSON) error {
 	if data.ChainID == "" {
 		return errors.New("chain id missing")
 	}
-	t.ChainID, err = strconv.ParseUint(util.PreUnmarshalHexString(data.ChainID), 16, 64)
-	if err != nil {
-		return errors.Wrap(err, "chain id invalid")
+	t.ChainID, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.ChainID), 16)
+	if !success {
+		return errors.New("chain id invalid")
 	}
 
 	if data.From == "" {
@@ -218,6 +266,14 @@ func (t *Type3Transaction) unpack(data *type3TransactionJSON) error {
 	t.Input, err = hex.DecodeString(util.PreUnmarshalHexString(data.Input))
 	if err != nil {
 		return errors.Wrap(err, "input invalid")
+	}
+
+	if data.MaxFeePerBlobGas == "" {
+		return errors.New("max fee per blob gas missing")
+	}
+	t.MaxFeePerBlobGas, err = strconv.ParseUint(util.PreUnmarshalHexString(data.MaxFeePerBlobGas), 16, 64)
+	if err != nil {
+		return errors.Wrap(err, "max fee per blob gas invalid")
 	}
 
 	if data.MaxFeePerGas == "" {
@@ -271,18 +327,24 @@ func (t *Type3Transaction) unpack(data *type3TransactionJSON) error {
 		return errors.New("value invalid")
 	}
 
-	if data.V == "" {
-		return errors.New("v missing")
-	}
-	t.V, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.V), 16)
-	if !success {
-		return errors.New("v invalid")
+	switch {
+	case data.YParity != "":
+		t.V, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.YParity), 16)
+		if !success {
+			return errors.New("yParity invalid")
+		}
+	case data.V != "":
+		t.V, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.V), 16)
+		if !success {
+			return errors.New("v invalid")
+		}
+	default:
+		return errors.New("yParity and v missing")
 	}
 
 	if data.R == "" {
 		return errors.New("r missing")
 	}
-	fmt.Printf("%v\n", data.R)
 	t.R, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.R), 16)
 	if !success {
 		return errors.New("r invalid")
@@ -306,9 +368,11 @@ func (t *Type3Transaction) MarshalRLP() ([]byte, error) {
 	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
 
 	// Transaction data.
-	util.RLPUint64(bufA, t.ChainID)
+	// TODO include blob versioned hashes.
+	util.RLPBytes(bufA, t.ChainID.Bytes())
 	util.RLPUint64(bufA, t.Nonce)
 	util.RLPUint64(bufA, t.MaxPriorityFeePerGas)
+	util.RLPUint64(bufA, t.MaxFeePerBlobGas)
 	util.RLPUint64(bufA, t.MaxFeePerGas)
 	util.RLPUint64(bufA, uint64(t.Gas))
 	if t.To != nil {
@@ -345,7 +409,7 @@ func (t *Type3Transaction) MarshalRLP() ([]byte, error) {
 	util.RLPBytes(bufA, t.S.Bytes())
 
 	// EIP-2718 definition.
-	bufB.WriteByte(0x02)
+	bufB.WriteByte(0x03)
 	util.RLPList(bufB, bufA.Bytes())
 	bufA.Reset()
 	util.RLPBytes(bufA, bufB.Bytes())

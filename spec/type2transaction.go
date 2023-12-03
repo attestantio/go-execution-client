@@ -33,7 +33,7 @@ type Type2Transaction struct {
 	BlockHash *types.Hash
 	// BlockNumber is only available for transactions included in a block, so optional.
 	BlockNumber *uint32
-	ChainID     uint64
+	ChainID     *big.Int
 	From        types.Address
 	Gas         uint32
 	// GasPrice is only available for transactions included in a block, so optional.
@@ -106,7 +106,7 @@ func (t *Type2Transaction) MarshalJSON() ([]byte, error) {
 		AccessList:           t.AccessList,
 		BlockHash:            blockHash,
 		BlockNumber:          blockNumber,
-		ChainID:              util.MarshalUint64(t.ChainID),
+		ChainID:              util.MarshalBigInt(t.ChainID),
 		From:                 util.MarshalByteArray(t.From[:]),
 		Gas:                  util.MarshalUint32(t.Gas),
 		GasPrice:             gasPrice,
@@ -175,9 +175,9 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 	if data.ChainID == "" {
 		return errors.New("chain id missing")
 	}
-	t.ChainID, err = strconv.ParseUint(util.PreUnmarshalHexString(data.ChainID), 16, 64)
-	if err != nil {
-		return errors.Wrap(err, "chain id invalid")
+	t.ChainID, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.ChainID), 16)
+	if !success {
+		return errors.New("chain id invalid")
 	}
 
 	if data.From == "" {
@@ -282,7 +282,6 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 	if data.R == "" {
 		return errors.New("r missing")
 	}
-	fmt.Printf("%v\n", data.R)
 	t.R, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.R), 16)
 	if !success {
 		return errors.New("r invalid")
@@ -306,7 +305,7 @@ func (t *Type2Transaction) MarshalRLP() ([]byte, error) {
 	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
 
 	// Transaction data.
-	util.RLPUint64(bufA, t.ChainID)
+	util.RLPBytes(bufA, t.ChainID.Bytes())
 	util.RLPUint64(bufA, t.Nonce)
 	util.RLPUint64(bufA, t.MaxPriorityFeePerGas)
 	util.RLPUint64(bufA, t.MaxFeePerGas)

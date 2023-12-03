@@ -19,50 +19,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/sha3"
 )
-
-// Address is a 20-byte execution layer address.
-type Address [20]byte
-
-// String returns the EIP-55 string representation of the address.
-func (a Address) String() string {
-	bytes := []byte(hex.EncodeToString(a[:]))
-
-	keccak := sha3.NewLegacyKeccak256()
-	keccak.Write(bytes)
-	hash := keccak.Sum(nil)
-
-	for i := 0; i < len(bytes); i++ {
-		hashByte := hash[i/2]
-		if i%2 == 0 {
-			hashByte >>= 4
-		} else {
-			hashByte &= 0xf
-		}
-		if bytes[i] > '9' && hashByte > 7 {
-			bytes[i] -= 32
-		}
-	}
-
-	return fmt.Sprintf("0x%s", string(bytes))
-}
-
-// Format formats the address.
-func (a Address) Format(state fmt.State, v rune) {
-	format := string(v)
-	switch v {
-	case 's':
-		fmt.Fprint(state, a.String())
-	case 'x', 'X':
-		if state.Flag('#') {
-			format = "#" + format
-		}
-		fmt.Fprintf(state, "%"+format, a[:])
-	default:
-		fmt.Fprintf(state, "%"+format, a[:])
-	}
-}
 
 // Hash is a 32-byte hash.
 type Hash [32]byte
