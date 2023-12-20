@@ -32,6 +32,12 @@ type Service interface {
 	Address() string
 }
 
+// BaseFeeProvider is the interface for providing the base fee.
+type BaseFeeProvider interface {
+	// BaseFee provides the base fee of the chain at the given block ID.
+	BaseFee(ctx context.Context, blockID string) (*big.Int, error)
+}
+
 // BalancesProvider is the interface for providing balances.
 type BalancesProvider interface {
 	// Balance obtains the balance for the given address at the given block ID.
@@ -66,6 +72,12 @@ type ChainIDProvider interface {
 type EventsProvider interface {
 	// Events returns the events matching the filter.
 	Events(ctx context.Context, filter *api.EventsFilter) ([]*spec.BerlinTransactionEvent, error)
+}
+
+// GasEstimationProvide is the interface for providing gas estimations.
+type GasEstimationProvide interface {
+	// EstimateGas estimates the gas required for a transaction.
+	EstimateGas(ctx context.Context, tx *spec.TransactionSubmission) (*big.Int, error)
 }
 
 // IssuanceProvider is the interface for providing issuance.
