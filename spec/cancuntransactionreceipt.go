@@ -1,4 +1,4 @@
-// Copyright © 2022 Attestant Limited.
+// Copyright © 2024 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/attestantio/go-execution-client/types"
@@ -25,12 +26,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// BerlinTransactionReceipt contains a transaction receipt.
-type BerlinTransactionReceipt struct {
+// CancunTransactionReceipt contains a transaction receipt.
+type CancunTransactionReceipt struct {
+	BlobGasPrice      *big.Int
+	BlobGasUsed       uint32
 	BlockHash         types.Hash
 	BlockNumber       uint32
 	ContractAddress   *types.Address
 	CumulativeGasUsed uint32
+	EffectiveGasPrice uint64
 	From              types.Address
 	GasUsed           uint32
 	Logs              []*BerlinTransactionEvent
@@ -42,12 +46,15 @@ type BerlinTransactionReceipt struct {
 	Type              TransactionType
 }
 
-// berlinTransactionReceiptJSON is the spec representation of the struct.
-type berlinTransactionReceiptJSON struct {
+// cancunTransactionReceiptJSON is the spec representation of the struct.
+type cancunTransactionReceiptJSON struct {
+	BlobGasPrice      string                    `json:"blobGasPrice"`
+	BlobGasUsed       string                    `json:"blobGasUsed"`
 	BlockHash         string                    `json:"blockHash"`
 	BlockNumber       string                    `json:"blockNumber"`
 	ContractAddress   *string                   `json:"contractAddress"`
 	CumulativeGasUsed string                    `json:"cumulativeGasUsed"`
+	EffectiveGasPrice string                    `json:"effectiveGasPrice"`
 	From              string                    `json:"from"`
 	GasUsed           string                    `json:"gasUsed"`
 	Logs              []*BerlinTransactionEvent `json:"logs"`
@@ -60,7 +67,7 @@ type berlinTransactionReceiptJSON struct {
 }
 
 // MarshalJSON implements json.Marshaler.
-func (t *BerlinTransactionReceipt) MarshalJSON() ([]byte, error) {
+func (t *CancunTransactionReceipt) MarshalJSON() ([]byte, error) {
 	var contractAddress *string
 	if t.ContractAddress != nil {
 		tmp := util.MarshalNullableAddress((*t.ContractAddress)[:])
@@ -71,12 +78,13 @@ func (t *BerlinTransactionReceipt) MarshalJSON() ([]byte, error) {
 		tmp := util.MarshalNullableAddress(t.To[:])
 		to = &tmp
 	}
-
-	return json.Marshal(&berlinTransactionReceiptJSON{
+	receipt := &cancunTransactionReceiptJSON{
+		BlobGasUsed:       util.MarshalUint32(t.BlobGasUsed),
 		BlockHash:         util.MarshalByteArray(t.BlockHash[:]),
 		BlockNumber:       util.MarshalUint32(t.BlockNumber),
 		ContractAddress:   contractAddress,
 		CumulativeGasUsed: util.MarshalUint32(t.CumulativeGasUsed),
+		EffectiveGasPrice: util.MarshalUint64(t.EffectiveGasPrice),
 		From:              util.MarshalByteArray(t.From[:]),
 		GasUsed:           util.MarshalUint32(t.GasUsed),
 		Logs:              t.Logs,
@@ -86,12 +94,17 @@ func (t *BerlinTransactionReceipt) MarshalJSON() ([]byte, error) {
 		TransactionHash:   util.MarshalByteArray(t.TransactionHash[:]),
 		TransactionIndex:  util.MarshalUint32(t.TransactionIndex),
 		Type:              t.Type,
-	})
+	}
+	if t.BlobGasPrice != nil {
+		receipt.BlobGasPrice = util.MarshalBigInt(t.BlobGasPrice)
+	}
+
+	return json.Marshal(receipt)
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (t *BerlinTransactionReceipt) UnmarshalJSON(input []byte) error {
-	var data berlinTransactionReceiptJSON
+func (t *CancunTransactionReceipt) UnmarshalJSON(input []byte) error {
+	var data cancunTransactionReceiptJSON
 	if err := json.Unmarshal(input, &data); err != nil {
 		return errors.Wrap(err, "invalid JSON")
 	}
@@ -99,8 +112,24 @@ func (t *BerlinTransactionReceipt) UnmarshalJSON(input []byte) error {
 	return t.unpack(&data)
 }
 
-func (t *BerlinTransactionReceipt) unpack(data *berlinTransactionReceiptJSON) error {
+func (t *CancunTransactionReceipt) unpack(data *cancunTransactionReceiptJSON) error {
 	var err error
+	var success bool
+
+	if data.BlobGasPrice != "" {
+		t.BlobGasPrice, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.BlobGasPrice), 16)
+		if !success {
+			return errors.New("blob gas price invalid")
+		}
+	}
+
+	if data.BlobGasUsed != "" {
+		tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.BlobGasUsed), 16, 32)
+		if err != nil {
+			return errors.Wrap(err, "blob gas used invalid")
+		}
+		t.BlobGasUsed = uint32(tmp)
+	}
 
 	if data.BlockHash == "" {
 		return errors.New("block hash missing")
@@ -138,6 +167,14 @@ func (t *BerlinTransactionReceipt) unpack(data *berlinTransactionReceiptJSON) er
 		return errors.Wrap(err, "cumulative gas used invalid")
 	}
 	t.CumulativeGasUsed = uint32(tmp)
+
+	if data.EffectiveGasPrice == "" {
+		return errors.New("effective gas price missing")
+	}
+	t.EffectiveGasPrice, err = strconv.ParseUint(util.PreUnmarshalHexString(data.EffectiveGasPrice), 16, 64)
+	if err != nil {
+		return errors.Wrap(err, "effective gas price invalid")
+	}
 
 	if data.From == "" {
 		return errors.New("from missing")
@@ -210,7 +247,7 @@ func (t *BerlinTransactionReceipt) unpack(data *berlinTransactionReceiptJSON) er
 }
 
 // String returns a string version of the structure.
-func (t *BerlinTransactionReceipt) String() string {
+func (t *CancunTransactionReceipt) String() string {
 	data, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)

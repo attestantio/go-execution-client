@@ -116,7 +116,7 @@ type TransactionsProvider interface {
 // TransactionReceiptsProvider is the interface for providing transaction receipts.
 type TransactionReceiptsProvider interface {
 	// TransactionReceipt returns the transaction receipt for the given transaction hash.
-	TransactionReceipt(ctx context.Context, hash types.Hash) (*spec.BerlinTransactionReceipt, error)
+	TransactionReceipt(ctx context.Context, hash types.Hash) (*spec.TransactionReceipt, error)
 }
 
 // CallProvider is the interface for making calls to the execution client.

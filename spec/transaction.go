@@ -99,6 +99,40 @@ func (t *Transaction) AccessList() []*AccessListEntry {
 	}
 }
 
+// BlobGasUsed returns the blob gas used by the transaction.
+// This value can be nil, if the transaction does not support this (e.g. type 0 transactions).
+func (t *Transaction) BlobGasUsed() *uint32 {
+	switch t.Type {
+	case TransactionType0:
+		return nil
+	case TransactionType1:
+		return nil
+	case TransactionType2:
+		return nil
+	case TransactionType3:
+		return t.Type3Transaction.BlobGasUsed
+	default:
+		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
+	}
+}
+
+// BlobVersionedHashes returns the blob versioned hashes of the transaction.
+// This value can be nil, if the transaction is not a blob transaction.
+func (t *Transaction) BlobVersionedHashes() []types.VersionedHash {
+	switch t.Type {
+	case TransactionType0:
+		return nil
+	case TransactionType1:
+		return nil
+	case TransactionType2:
+		return nil
+	case TransactionType3:
+		return t.Type3Transaction.BlobVersionedHashes
+	default:
+		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
+	}
+}
+
 // BlockHash returns the block hash of the transaction.
 // This value can be nil, if the transaction is not included in a block.
 func (t *Transaction) BlockHash() *types.Hash {
@@ -227,6 +261,23 @@ func (t *Transaction) MaxFeePerGas() uint64 {
 		return t.Type2Transaction.MaxFeePerGas
 	case TransactionType3:
 		return t.Type3Transaction.MaxFeePerGas
+	default:
+		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
+	}
+}
+
+// MaxFeePerBlobGas returns the maximum fee per blob gas paid by the transaction.
+// This value can be 0, if the transaction does not support this (e.g. type 0 transactions).
+func (t *Transaction) MaxFeePerBlobGas() uint64 {
+	switch t.Type {
+	case TransactionType0:
+		return 0
+	case TransactionType1:
+		return 0
+	case TransactionType2:
+		return 0
+	case TransactionType3:
+		return t.Type3Transaction.MaxFeePerBlobGas
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}

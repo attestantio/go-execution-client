@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	"github.com/attestantio/go-execution-client/types"
 	"github.com/pkg/errors"
@@ -27,11 +28,13 @@ type TransactionReceipt struct {
 	Fork                     Fork
 	BerlinTransactionReceipt *BerlinTransactionReceipt
 	LondonTransactionReceipt *LondonTransactionReceipt
+	CancunTransactionReceipt *CancunTransactionReceipt
 }
 
 // transactionReceiptJSON is a simple struct to fetch the transaction type.
 type transactionReceiptJSON struct {
 	EffectiveGasPrice string `json:"effectiveGasPrice"`
+	BlobGasPrice      string `json:"blobGasPrice"`
 }
 
 // MarshalJSON marshals a typed transaction.
@@ -54,17 +57,46 @@ func (t *TransactionReceipt) UnmarshalJSON(input []byte) error {
 		return errors.Wrap(err, "invalid JSON")
 	}
 
-	if data.EffectiveGasPrice == "" {
-		t.Fork = ForkBerlin
-		t.BerlinTransactionReceipt = &BerlinTransactionReceipt{}
-		err = json.Unmarshal(input, t.BerlinTransactionReceipt)
-	} else {
+	switch {
+	case data.BlobGasPrice != "":
+		t.Fork = ForkCancun
+		t.CancunTransactionReceipt = &CancunTransactionReceipt{}
+		err = json.Unmarshal(input, t.CancunTransactionReceipt)
+	case data.EffectiveGasPrice != "":
 		t.Fork = ForkLondon
 		t.LondonTransactionReceipt = &LondonTransactionReceipt{}
 		err = json.Unmarshal(input, t.LondonTransactionReceipt)
+	default:
+		t.Fork = ForkBerlin
+		t.BerlinTransactionReceipt = &BerlinTransactionReceipt{}
+		err = json.Unmarshal(input, t.BerlinTransactionReceipt)
 	}
 
 	return err
+}
+
+// BlobGasPrice returns the blob gas price of the transaction receipt.
+func (t *TransactionReceipt) BlobGasPrice() *big.Int {
+	switch t.Fork {
+	case ForkBerlin, ForkLondon, ForkShanghai:
+		return nil
+	case ForkCancun:
+		return t.CancunTransactionReceipt.BlobGasPrice
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
+}
+
+// BlobGasUsed returns the blob gas used of the transaction receipt.
+func (t *TransactionReceipt) BlobGasUsed() uint32 {
+	switch t.Fork {
+	case ForkBerlin, ForkLondon, ForkShanghai:
+		return 0
+	case ForkCancun:
+		return t.CancunTransactionReceipt.BlobGasUsed
+	default:
+		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
+	}
 }
 
 // BlockHash returns the block hash of the transaction receipt.
@@ -72,8 +104,10 @@ func (t *TransactionReceipt) BlockHash() types.Hash {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.BlockHash
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.BlockHash
+	case ForkCancun:
+		return t.CancunTransactionReceipt.BlockHash
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -84,8 +118,10 @@ func (t *TransactionReceipt) BlockNumber() uint32 {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.BlockNumber
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.BlockNumber
+	case ForkCancun:
+		return t.CancunTransactionReceipt.BlockNumber
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -97,8 +133,10 @@ func (t *TransactionReceipt) ContractAddress() *types.Address {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.ContractAddress
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.ContractAddress
+	case ForkCancun:
+		return t.CancunTransactionReceipt.ContractAddress
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -109,8 +147,10 @@ func (t *TransactionReceipt) CumulativeGasUsed() uint32 {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.CumulativeGasUsed
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.CumulativeGasUsed
+	case ForkCancun:
+		return t.CancunTransactionReceipt.CumulativeGasUsed
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -122,8 +162,10 @@ func (t *TransactionReceipt) EffectiveGasPrice() uint64 {
 	switch t.Fork {
 	case ForkBerlin:
 		return 0
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.EffectiveGasPrice
+	case ForkCancun:
+		return t.CancunTransactionReceipt.EffectiveGasPrice
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -134,8 +176,10 @@ func (t *TransactionReceipt) From() types.Address {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.From
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.From
+	case ForkCancun:
+		return t.CancunTransactionReceipt.From
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -146,8 +190,10 @@ func (t *TransactionReceipt) GasUsed() uint32 {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.GasUsed
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.GasUsed
+	case ForkCancun:
+		return t.CancunTransactionReceipt.GasUsed
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -158,8 +204,10 @@ func (t *TransactionReceipt) Logs() []*BerlinTransactionEvent {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.Logs
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.Logs
+	case ForkCancun:
+		return t.CancunTransactionReceipt.Logs
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -170,8 +218,10 @@ func (t *TransactionReceipt) LogsBloom() []byte {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.LogsBloom
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.LogsBloom
+	case ForkCancun:
+		return t.CancunTransactionReceipt.LogsBloom
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -182,8 +232,10 @@ func (t *TransactionReceipt) Status() uint32 {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.Status
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.Status
+	case ForkCancun:
+		return t.CancunTransactionReceipt.Status
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -195,8 +247,10 @@ func (t *TransactionReceipt) To() *types.Address {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.To
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.To
+	case ForkCancun:
+		return t.CancunTransactionReceipt.To
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -207,8 +261,10 @@ func (t *TransactionReceipt) TransactionHash() types.Hash {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.TransactionHash
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.TransactionHash
+	case ForkCancun:
+		return t.CancunTransactionReceipt.TransactionHash
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -219,8 +275,10 @@ func (t *TransactionReceipt) TransactionIndex() uint32 {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.TransactionIndex
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.TransactionIndex
+	case ForkCancun:
+		return t.CancunTransactionReceipt.TransactionIndex
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}
@@ -231,8 +289,10 @@ func (t *TransactionReceipt) Type() TransactionType {
 	switch t.Fork {
 	case ForkBerlin:
 		return t.BerlinTransactionReceipt.Type
-	case ForkLondon, ForkShanghai, ForkCancun:
+	case ForkLondon, ForkShanghai:
 		return t.LondonTransactionReceipt.Type
+	case ForkCancun:
+		return t.CancunTransactionReceipt.Type
 	default:
 		panic(fmt.Errorf("unhandled transaction receipt fork %s", t.Fork))
 	}

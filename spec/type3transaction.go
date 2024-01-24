@@ -30,7 +30,7 @@ import (
 type Type3Transaction struct {
 	AccessList []*AccessListEntry
 	// BlobGasPrice is only available for transactions included in a block, so optional.
-	BlobGasPrice *uint64
+	BlobGasPrice *big.Int
 	// BlobGasUsed is only available for transactions included in a block, so optional.
 	BlobGasUsed         *uint32
 	BlobVersionedHashes []types.VersionedHash
@@ -114,7 +114,7 @@ func (t *Type3Transaction) MarshalJSON() ([]byte, error) {
 	}
 	var blobGasPrice *string
 	if t.BlobGasPrice != nil {
-		tmp := util.MarshalUint64(*t.BlobGasPrice)
+		tmp := util.MarshalBigInt(t.BlobGasPrice)
 		blobGasPrice = &tmp
 	}
 	var blobGasUsed *string
@@ -180,11 +180,10 @@ func (t *Type3Transaction) unpack(data *type3TransactionJSON) error {
 	}
 
 	if data.BlobGasPrice != nil {
-		tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(*data.BlobGasPrice), 16, 64)
-		if err != nil {
-			return errors.Wrap(err, "blob gas price invalid")
+		t.BlobGasPrice, success = new(big.Int).SetString(util.PreUnmarshalHexString(*data.BlobGasPrice), 16)
+		if !success {
+			return errors.New("blob gas price invalid")
 		}
-		t.BlobGasPrice = &tmp
 	}
 
 	if data.BlobGasUsed != nil {

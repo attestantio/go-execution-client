@@ -69,7 +69,7 @@ func TestType3TransactionJSON(t *testing.T) {
 		{
 			name:  "BlobGasPriceInvalid",
 			input: []byte(`{"accessList":[],"blobGasPrice":"true","blobGasUsed":"0x20000","blobVersionedHashes":["0x010a8b6ba3ab54a1119c273b22a15c700be68aba00cc989903f0a53459d6daad"],"blockHash":"0xc313c53462bd60aff8637329ef2c554f3f730e158ad363b4dfb8bb23d3b9747d","blockNumber":"0x520","chainId":"0x1a1f0ff42","from":"0x7e454a14b8e7528465eef86f0dc1da4f235d9d79","gas":"0x5208","gasPrice":"0xee6b281c","hash":"0xa93f6ce94cd78c3344d2f639620e36f327f59bb8d583a65f4d851ce11e36e2d2","input":"0x","maxFeePerBlobGas":"0x3e8","maxFeePerGas":"0xee6b281c","maxPriorityFeePerGas":"0xee6b281c","nonce":"0x1","r":"0x8a8eb78331b968788c11b9c418f6979cc6dec32f4f4ad3ba398fec5b9058f0fa","s":"0x50225cb61b29987a032d6187ae3d4af7fadd6107e17f1adb9ad7f136417d3548","to":"0x000000000000000000000000000000000000f1c1","transactionIndex":"0x0","type":"0x3","v":"0x0","value":"0x0","yParity":"0x0"}`),
-			err:   "blob gas price invalid: strconv.ParseUint: parsing \"true\": invalid syntax",
+			err:   "blob gas price invalid",
 		},
 		{
 			name:  "BlobGasUsedWrongType",

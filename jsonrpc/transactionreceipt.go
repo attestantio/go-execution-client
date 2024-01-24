@@ -23,12 +23,12 @@ import (
 )
 
 // TransactionReceipt returns the transaction receipt for the given transaction hash.
-func (s *Service) TransactionReceipt(_ context.Context, hash types.Hash) (*spec.BerlinTransactionReceipt, error) {
+func (s *Service) TransactionReceipt(_ context.Context, hash types.Hash) (*spec.TransactionReceipt, error) {
 	if len(hash) == 0 {
 		return nil, errors.New("hash nil")
 	}
 
-	var receipt spec.BerlinTransactionReceipt
+	var receipt spec.TransactionReceipt
 	if err := s.client.CallFor(&receipt, "eth_getTransactionReceipt", fmt.Sprintf("%#x", hash)); err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-// Copyright © 2023 Attestant Limited.
+// Copyright © 2023, 2024 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -30,7 +30,9 @@ import (
 // CancunBlock contains a block after the Cancun hardfork.
 type CancunBlock struct {
 	BaseFeePerGas         uint64
+	BlobGasUsed           uint64
 	Difficulty            uint64
+	ExcessBlobGas         uint64
 	ExtraData             []byte
 	GasLimit              uint32
 	GasUsed               uint32
@@ -58,7 +60,9 @@ type CancunBlock struct {
 // cancunBlockJSON is the spec representation of the struct.
 type cancunBlockJSON struct {
 	BaseFeePerGas         string         `json:"baseFeePerGas"`
+	BlobGasUsed           string         `json:"blobGasUsed"`
 	Difficulty            string         `json:"difficulty"`
+	ExcessBlobGas         string         `json:"excessBlobGas"`
 	ExtraData             string         `json:"extraData"`
 	GasLimit              string         `json:"gasLimit"`
 	GasUsed               string         `json:"gasUsed"`
@@ -92,7 +96,9 @@ func (b *CancunBlock) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(&cancunBlockJSON{
 		BaseFeePerGas:         util.MarshalUint64(b.BaseFeePerGas),
+		BlobGasUsed:           util.MarshalUint64(b.BlobGasUsed),
 		Difficulty:            util.MarshalUint64(b.Difficulty),
+		ExcessBlobGas:         util.MarshalUint64(b.ExcessBlobGas),
 		ExtraData:             util.MarshalByteArray(b.ExtraData),
 		GasLimit:              util.MarshalUint32(b.GasLimit),
 		GasUsed:               util.MarshalUint32(b.GasUsed),
@@ -137,6 +143,15 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 		}
 	}
 
+	if data.BlobGasUsed == "" {
+		return errors.New("blob gas used missing")
+	}
+	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.BlobGasUsed), 16, 32)
+	if err != nil {
+		return errors.Wrap(err, "blob gas used invalid")
+	}
+	b.BlobGasUsed = tmp
+
 	if data.Difficulty == "" {
 		return errors.New("difficulty missing")
 	}
@@ -144,6 +159,15 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "difficulty invalid")
 	}
+
+	if data.ExcessBlobGas == "" {
+		return errors.New("excess blob gas missing")
+	}
+	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.ExcessBlobGas), 16, 32)
+	if err != nil {
+		return errors.Wrap(err, "excess blob gas invalid")
+	}
+	b.ExcessBlobGas = tmp
 
 	if data.ExtraData == "" {
 		return errors.New("extra data missing")
@@ -156,7 +180,7 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	if data.GasUsed == "" {
 		return errors.New("gas used missing")
 	}
-	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.GasUsed), 16, 32)
+	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.GasUsed), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "gas used invalid")
 	}

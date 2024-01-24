@@ -35,9 +35,12 @@ type Block struct {
 
 // blockTypeJSON is a struct that helps us identify the block type.
 type blockTypeJSON struct {
-	BaseFeePerGas         string                   `json:"baseFeePerGas"`
-	Withdrawals           []map[string]interface{} `json:"withdrawals"`
-	ParentBeaconBlockRoot string                   `json:"parentBeaconBlockRoot"`
+	// Present from London onwards.
+	BaseFeePerGas string `json:"baseFeePerGas"`
+	// Present from Shanghai onwards.
+	Withdrawals []map[string]interface{} `json:"withdrawals"`
+	// Present from Cancun onwards.
+	ParentBeaconBlockRoot string `json:"parentBeaconBlockRoot"`
 }
 
 // MarshalJSON marshals a typed transaction.
@@ -475,6 +478,28 @@ func (b *Block) ParentBeaconBlockRoot() (types.Root, bool) {
 		return b.Cancun.ParentBeaconBlockRoot, true
 	default:
 		return types.Root{}, false
+	}
+}
+
+// BlobGasUsed returns the blob gas used of the block.
+// This is not available in all forks, so also returns a presence flag.
+func (b *Block) BlobGasUsed() (uint64, bool) {
+	switch b.Fork {
+	case ForkCancun:
+		return b.Cancun.BlobGasUsed, true
+	default:
+		return 0, false
+	}
+}
+
+// ExcessBlobGas returns the excess blob gas of the block.
+// This is not available in all forks, so also returns a presence flag.
+func (b *Block) ExcessBlobGas() (uint64, bool) {
+	switch b.Fork {
+	case ForkCancun:
+		return b.Cancun.ExcessBlobGas, true
+	default:
+		return 0, false
 	}
 }
 
