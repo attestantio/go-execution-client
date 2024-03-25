@@ -99,8 +99,8 @@ func (s *Service) TransactionInBlock(_ context.Context, _ types.Hash, _ uint32) 
 }
 
 // TransactionReceipt returns the transaction receipt for the given transaction hash.
-func (s *Service) TransactionReceipt(_ context.Context, _ types.Hash) (*spec.BerlinTransactionReceipt, error) {
-	return &spec.BerlinTransactionReceipt{}, nil
+func (s *Service) TransactionReceipt(_ context.Context, _ types.Hash) (*spec.TransactionReceipt, error) {
+	return &spec.TransactionReceipt{}, nil
 }
 
 // Call makes a call to the execution client.

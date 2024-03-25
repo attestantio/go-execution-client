@@ -163,6 +163,7 @@ linters:
     - nlreturn
     - nolintlint
     - nosnakecase
+    - perfsprint
     - promlinter
     - rowserrcheck
     - scopelint
