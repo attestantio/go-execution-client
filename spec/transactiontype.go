@@ -64,5 +64,9 @@ func (d *TransactionType) UnmarshalJSON(input []byte) error {
 
 // String returns a string representation of the item.
 func (d TransactionType) String() string {
+	if int(d) < 0 || int(d) >= len(transactionTypeStrings) {
+		return "unknown"
+	}
+
 	return transactionTypeStrings[d]
 }

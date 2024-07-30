@@ -73,5 +73,9 @@ func (d *Fork) UnmarshalJSON(input []byte) error {
 
 // String returns a string representation of the item.
 func (d Fork) String() string {
+	if int(d) < 0 || int(d) >= len(forkStrings) {
+		return "unknown"
+	}
+
 	return forkStrings[d]
 }
