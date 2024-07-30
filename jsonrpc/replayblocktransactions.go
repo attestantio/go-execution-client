@@ -32,10 +32,11 @@ func (s *Service) ReplayBlockTransactions(ctx context.Context, blockID string) (
 	if err != nil {
 		return nil, errors.Wrap(err, "unhandled block ID")
 	}
-	return s.replayBlockTransactions(ctx, height)
+
+	return s.replayBlockTransactionsAtHeight(ctx, height)
 }
 
-func (s *Service) replayBlockTransactions(_ context.Context, height int64) ([]*api.TransactionResult, error) {
+func (s *Service) replayBlockTransactionsAtHeight(_ context.Context, height int64) ([]*api.TransactionResult, error) {
 	var transactionResults []*api.TransactionResult
 
 	log.Trace().Int64("height", height).Msg("Replaying block transactions")
@@ -47,7 +48,11 @@ func (s *Service) replayBlockTransactions(_ context.Context, height int64) ([]*a
 		// Block 0 is a special case, with no transactions.
 		transactionResults = make([]*api.TransactionResult, 0)
 	default:
-		err = s.client.CallFor(&transactionResults, "trace_replayBlockTransactions", util.MarshalUint32(uint32(height)), []string{"stateDiff"})
+		err = s.client.CallFor(&transactionResults,
+			"trace_replayBlockTransactions",
+			util.MarshalUint32(uint32(height)),
+			[]string{"stateDiff"},
+		)
 	}
 	if err != nil {
 		return nil, err

@@ -88,19 +88,17 @@ func (t *TransactionStateChange) unpack(data *transactionStateChangeJSON) error 
 		}
 	}
 
-	if data.Alteration != nil {
-		if data.Alteration.From != "" {
-			t.From, err = util.StrToBigInt("from", data.Alteration.From)
-			if err != nil {
-				return err
-			}
+	if data.Alteration != nil && data.Alteration.From != "" {
+		t.From, err = util.StrToBigInt("from", data.Alteration.From)
+		if err != nil {
+			return err
 		}
+	}
 
-		if data.Alteration.To != "" {
-			t.To, err = util.StrToBigInt("to", data.Alteration.To)
-			if err != nil {
-				return err
-			}
+	if data.Alteration != nil && data.Alteration.To != "" {
+		t.To, err = util.StrToBigInt("to", data.Alteration.To)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -113,5 +111,6 @@ func (t *TransactionStateChange) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(data)
 }

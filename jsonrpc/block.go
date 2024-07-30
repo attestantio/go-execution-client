@@ -32,7 +32,7 @@ var blockIdentifiers = map[string]struct{}{
 	"finalized": {},
 }
 
-// Block returns the block given an ID
+// Block returns the block given an ID.
 func (s *Service) Block(ctx context.Context, blockID string) (*spec.Block, error) {
 	if blockID == "" ||
 		blockID == "latest" {
@@ -48,6 +48,7 @@ func (s *Service) Block(ctx context.Context, blockID string) (*spec.Block, error
 	if err != nil {
 		return nil, errors.Wrap(err, "unhandled block ID")
 	}
+
 	return s.blockAtHeight(ctx, height)
 }
 
@@ -75,5 +76,6 @@ func (s *Service) blockAtHeight(ctx context.Context, height int64) (*spec.Block,
 	if height == -1 {
 		return s.blockAtIdentifier(ctx, "latest")
 	}
+
 	return s.blockAtIdentifier(ctx, util.MarshalInt64(height))
 }

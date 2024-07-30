@@ -161,7 +161,7 @@ func (t *Type3Transaction) UnmarshalJSON(input []byte) error {
 	return t.unpack(&data)
 }
 
-// nolint:gocyclo
+//nolint:gocyclo
 func (t *Type3Transaction) unpack(data *type3TransactionJSON) error {
 	var err error
 	var success bool
@@ -408,10 +408,13 @@ func (t *Type3Transaction) MarshalRLP() ([]byte, error) {
 	util.RLPBytes(bufA, t.S.Bytes())
 
 	// EIP-2718 definition.
-	bufB.WriteByte(0x03)
+	if err := bufB.WriteByte(0x03); err != nil {
+		return nil, err
+	}
 	util.RLPList(bufB, bufA.Bytes())
 	bufA.Reset()
 	util.RLPBytes(bufA, bufB.Bytes())
+
 	return bufA.Bytes(), nil
 }
 
@@ -421,5 +424,6 @@ func (t *Type3Transaction) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(bytes.TrimSuffix(data, []byte("\n")))
 }

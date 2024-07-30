@@ -42,5 +42,6 @@ func (s *Service) blockIDToHeight(ctx context.Context, blockID string) (int64, e
 			return -1, errors.Wrap(err, "unhandled block ID")
 		}
 	}
+
 	return height, nil
 }

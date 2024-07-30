@@ -29,7 +29,11 @@ func (s *Service) TransactionInBlock(_ context.Context, blockHash types.Hash, in
 	}
 
 	var transaction spec.Transaction
-	if err := s.client.CallFor(&transaction, "eth_getTransactionByBlockHashAndIndex", fmt.Sprintf("%#x", blockHash), fmt.Sprintf("%#x", index)); err != nil {
+	if err := s.client.CallFor(&transaction,
+		"eth_getTransactionByBlockHashAndIndex",
+		fmt.Sprintf("%#x", blockHash),
+		fmt.Sprintf("%#x", index),
+	); err != nil {
 		return nil, err
 	}
 

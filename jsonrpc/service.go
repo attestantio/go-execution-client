@@ -118,20 +118,23 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 
 // fetchStaticValues fetches values that never change.
 // This caches the values, avoiding future API calls.
-func (s *Service) fetchStaticValues(_ context.Context) error {
+func (*Service) fetchStaticValues(_ context.Context) error {
 	return nil
 }
 
 // checkCapabilites checks the capabilities of the client and sets
 // internal flags appropriately.
+//
+//nolint:unparam
 func (s *Service) checkCapabilities(ctx context.Context) error {
 	_, err := s.issuanceAtHeight(ctx, 1)
 	s.isIssuanceProvider = err == nil
+
 	return nil
 }
 
 // Name provides the name of the service.
-func (s *Service) Name() string {
+func (*Service) Name() string {
 	return "json-rpc"
 }
 
@@ -141,5 +144,5 @@ func (s *Service) Address() string {
 }
 
 // close closes the service, freeing up resources.
-func (s *Service) close() {
+func (*Service) close() {
 }

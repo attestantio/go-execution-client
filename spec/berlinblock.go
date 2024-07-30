@@ -107,7 +107,8 @@ func (b *BerlinBlock) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-// nolint:gocyclo
+//
+//nolint:gocyclo
 func (b *BerlinBlock) UnmarshalJSON(input []byte) error {
 	var data berlinBlockJSON
 	if err := json.Unmarshal(input, &data); err != nil {
@@ -296,5 +297,6 @@ func (b *BerlinBlock) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(bytes.TrimSuffix(data, []byte("\n")))
 }

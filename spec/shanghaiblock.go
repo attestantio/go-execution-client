@@ -116,7 +116,8 @@ func (b *ShanghaiBlock) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-// nolint:gocyclo
+//
+//nolint:gocyclo
 func (b *ShanghaiBlock) UnmarshalJSON(input []byte) error {
 	var data shanghaiBlockJSON
 	if err := json.Unmarshal(input, &data); err != nil {
@@ -324,5 +325,6 @@ func (b *ShanghaiBlock) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(bytes.TrimSuffix(data, []byte("\n")))
 }

@@ -31,6 +31,7 @@ func (s *Service) Issuance(ctx context.Context, blockID string) (*api.Issuance, 
 	if err != nil {
 		return nil, err
 	}
+
 	return s.issuanceAtHeight(ctx, height)
 }
 

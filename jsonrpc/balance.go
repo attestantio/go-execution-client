@@ -38,9 +38,11 @@ func (s *Service) Balance(ctx context.Context, address types.Address, blockID st
 	if err != nil {
 		return nil, errors.Wrap(err, "unhandled block ID")
 	}
+
 	return s.balanceAtHeight(ctx, address, height)
 }
 
+//nolint:unparam
 func (s *Service) balanceAtHash(ctx context.Context,
 	address types.Address,
 	hash string,

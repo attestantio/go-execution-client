@@ -68,6 +68,7 @@ func (d *Fork) UnmarshalJSON(input []byte) error {
 	default:
 		err = fmt.Errorf("unrecognised fork version %s", string(input))
 	}
+
 	return err
 }
 

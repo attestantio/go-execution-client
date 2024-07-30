@@ -73,6 +73,7 @@ func (t *LondonTransactionReceipt) MarshalJSON() ([]byte, error) {
 		tmp := util.MarshalNullableAddress(t.To[:])
 		to = &tmp
 	}
+
 	return json.Marshal(&londonTransactionReceiptJSON{
 		BlockHash:         util.MarshalByteArray(t.BlockHash[:]),
 		BlockNumber:       util.MarshalUint32(t.BlockNumber),
@@ -225,5 +226,6 @@ func (t *LondonTransactionReceipt) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(bytes.TrimSuffix(data, []byte("\n")))
 }

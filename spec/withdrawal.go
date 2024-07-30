@@ -61,7 +61,6 @@ func (w *Withdrawal) UnmarshalJSON(input []byte) error {
 	return w.unpack(&data)
 }
 
-// nolint:gocyclo
 func (w *Withdrawal) unpack(data *withdrawalJSON) error {
 	var err error
 	var success bool
@@ -111,5 +110,6 @@ func (w *Withdrawal) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(bytes.TrimSuffix(data, []byte("\n")))
 }

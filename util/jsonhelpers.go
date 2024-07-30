@@ -45,6 +45,7 @@ func MarshalInt64(input int64) string {
 	if input == 0 {
 		return "0x0"
 	}
+
 	return fmt.Sprintf("0x%s", strings.TrimPrefix(fmt.Sprintf("%x", input), "0"))
 }
 
@@ -53,6 +54,7 @@ func MarshalUint64(input uint64) string {
 	if input == 0 {
 		return "0x0"
 	}
+
 	return fmt.Sprintf("0x%s", strings.TrimPrefix(fmt.Sprintf("%x", input), "0"))
 }
 
@@ -61,6 +63,7 @@ func MarshalUint32(input uint32) string {
 	if input == 0 {
 		return "0x0"
 	}
+
 	return fmt.Sprintf("0x%s", strings.TrimPrefix(fmt.Sprintf("%x", input), "0"))
 }
 
@@ -69,6 +72,7 @@ func MarshalNullableUint32(input uint32) string {
 	if input == 0 {
 		return ""
 	}
+
 	return fmt.Sprintf("0x%s", strings.TrimPrefix(fmt.Sprintf("%x", input), "0"))
 }
 
@@ -77,6 +81,7 @@ func MarshalBigInt(input *big.Int) string {
 	if input == nil || input.Cmp(zero) == 0 {
 		return "0x0"
 	}
+
 	return fmt.Sprintf("0x%s", strings.TrimPrefix(fmt.Sprintf("%x", input), "0"))
 }
 
@@ -85,10 +90,13 @@ func MarshalByteArray(input []byte) string {
 	if len(input) == 0 {
 		return "0x"
 	}
+
 	return fmt.Sprintf("%#x", input)
 }
 
-var zeroAddress = []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+var zeroAddress = []byte{
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+}
 
 // MarshalAddress marshals an address as per the Ethereum standard.
 func MarshalAddress(input []byte) string {
@@ -100,6 +108,7 @@ func MarshalNullableAddress(input []byte) string {
 	if bytes.Equal(input, zeroAddress) {
 		return ""
 	}
+
 	return fmt.Sprintf("%#x", input)
 }
 
@@ -108,6 +117,7 @@ func MarshalNullableByteArray(input []byte) string {
 	if len(input) == 0 {
 		return ""
 	}
+
 	return fmt.Sprintf("%#x", input)
 }
 

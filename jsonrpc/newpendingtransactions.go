@@ -35,7 +35,9 @@ func (s *Service) NewPendingTransactions(ctx context.Context, ch chan *spec.Tran
 	}
 
 	// Set up the subscription.
-	if err := conn.WriteMessage(websocket.TextMessage, []byte(`{"jsonrpc":"2.0", "id": 1, "method": "eth_subscribe", "params": ["newPendingTransactions"]}`)); err != nil {
+	if err := conn.WriteMessage(websocket.TextMessage,
+		[]byte(`{"jsonrpc":"2.0", "id": 1, "method": "eth_subscribe", "params": ["newPendingTransactions"]}`),
+	); err != nil {
 		return nil, errors.Wrap(err, "failed to request subscription")
 	}
 
@@ -71,25 +73,28 @@ func (s *Service) receiveNewPendingTransactionMsg(ctx context.Context, conn *web
 		}
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to read received message")
+
 			continue
 		}
 		log.Info().Str("msg", string(msg)).Msg("Received message")
 		res := newPendingTransactionsEvent{}
 		if err := json.Unmarshal(msg, &res); err != nil {
 			log.Error().Err(err).Msg("Failed to unmarshal message")
+
 			continue
 		}
 
 		tx, err := s.Transaction(ctx, res.Params.Result)
 		if err != nil {
 			log.Error().Err(err).Str("tx_hash", fmt.Sprintf("%#x", res.Params.Result)).Msg("Failed to obtain transaction")
+
 			continue
 		}
 		ch <- tx
 	}
 }
 
-func (s *Service) closeSocketOnCtxDone(ctx context.Context, conn *websocket.Conn) {
+func (*Service) closeSocketOnCtxDone(ctx context.Context, conn *websocket.Conn) {
 	<-ctx.Done()
 	log.Trace().Msg("Context done; closing websocket connection")
 
@@ -97,10 +102,12 @@ func (s *Service) closeSocketOnCtxDone(ctx context.Context, conn *websocket.Conn
 	err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to send websocket close message")
+
 		return
 	}
 	if err := conn.Close(); err != nil {
 		log.Error().Err(err).Msg("Failed to close websocket")
+
 		return
 	}
 

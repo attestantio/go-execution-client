@@ -51,6 +51,7 @@ func (i *Issuance) UnmarshalJSON(input []byte) error {
 	if err := json.Unmarshal(input, &data); err != nil {
 		return errors.Wrap(err, "invalid JSON")
 	}
+
 	return i.unpack(&data)
 }
 
@@ -93,5 +94,6 @@ func (i *Issuance) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(data)
 }

@@ -58,6 +58,7 @@ func (s *SyncState) UnmarshalJSON(input []byte) error {
 		if err := json.Unmarshal(input, &data); err != nil {
 			return errors.Wrap(err, "invalid JSON")
 		}
+
 		return s.unpack(&data)
 	}
 
@@ -67,6 +68,7 @@ func (s *SyncState) UnmarshalJSON(input []byte) error {
 		s.HighestBlock = 0
 		s.StartingBlock = 0
 		s.Syncing = false
+
 		return nil
 	}
 
@@ -100,5 +102,6 @@ func (s *SyncState) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(data)
 }

@@ -42,6 +42,7 @@ func (t *TransactionResult) MarshalJSON() ([]byte, error) {
 	for k, v := range t.StateDiff {
 		stateDiff[util.MarshalAddress(k[:])] = v
 	}
+
 	return json.Marshal(&transactionResultJSON{
 		Output:          fmt.Sprintf("%#x", t.Output),
 		StateDiff:       stateDiff,
@@ -93,5 +94,6 @@ func (t *TransactionResult) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(data)
 }

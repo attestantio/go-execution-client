@@ -59,6 +59,7 @@ func (d *TransactionType) UnmarshalJSON(input []byte) error {
 	default:
 		err = fmt.Errorf("unrecognised transaction type %s", string(input))
 	}
+
 	return err
 }
 

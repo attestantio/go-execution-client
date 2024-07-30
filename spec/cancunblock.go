@@ -125,7 +125,8 @@ func (b *CancunBlock) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-// nolint:gocyclo
+//
+//nolint:gocyclo
 func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	var data cancunBlockJSON
 	if err := json.Unmarshal(input, &data); err != nil {
@@ -360,5 +361,6 @@ func (b *CancunBlock) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(bytes.TrimSuffix(data, []byte("\n")))
 }

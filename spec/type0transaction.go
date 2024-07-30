@@ -89,6 +89,7 @@ func (t *Type0Transaction) MarshalJSON() ([]byte, error) {
 		tmp := util.MarshalUint32(*t.TransactionIndex)
 		transactionIndex = &tmp
 	}
+
 	return json.Marshal(&type0TransactionJSON{
 		BlockHash:        blockHash,
 		BlockNumber:      blockNumber,
@@ -119,7 +120,7 @@ func (t *Type0Transaction) UnmarshalJSON(input []byte) error {
 	return t.unpack(&data)
 }
 
-// nolint:gocyclo
+//nolint:gocyclo
 func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	var err error
 	var success bool
@@ -289,6 +290,7 @@ func (t *Type0Transaction) MarshalRLP() ([]byte, error) {
 	util.RLPBytes(bufA, t.S.Bytes())
 
 	util.RLPList(bufB, bufA.Bytes())
+
 	return bufB.Bytes(), nil
 }
 
@@ -298,5 +300,6 @@ func (t *Type0Transaction) String() string {
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
 	}
+
 	return string(bytes.TrimSuffix(data, []byte("\n")))
 }
