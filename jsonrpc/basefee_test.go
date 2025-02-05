@@ -39,10 +39,8 @@ func TestBaseFee(t *testing.T) {
 		err     string
 	}{
 		{
-			name: "Implicit",
-		},
-		{
-			name: "Latest",
+			name:    "Latest",
+			blockID: "latest",
 		},
 		{
 			name:    "15100",

@@ -268,12 +268,11 @@ func (b *LondonBlock) UnmarshalJSON(input []byte) error {
 	}
 	b.Timestamp = time.Unix(timestamp, 0)
 
-	if data.TotalDifficulty == "" {
-		return errors.New("total difficulty missing")
-	}
-	b.TotalDifficulty, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.TotalDifficulty), 16)
-	if !success {
-		return errors.New("total difficulty invalid")
+	if data.TotalDifficulty != "" {
+		b.TotalDifficulty, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.TotalDifficulty), 16)
+		if !success {
+			return errors.New("total difficulty invalid")
+		}
 	}
 
 	b.Transactions = data.Transactions
