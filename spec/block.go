@@ -1,4 +1,4 @@
-// Copyright © 2021 - 2023 Attestant Limited.
+// Copyright © 2021 - 2025 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,6 +31,7 @@ type Block struct {
 	London   *LondonBlock
 	Shanghai *ShanghaiBlock
 	Cancun   *CancunBlock
+	Prague   *PragueBlock
 }
 
 // blockTypeJSON is a struct that helps us identify the block type.
@@ -41,6 +42,8 @@ type blockTypeJSON struct {
 	Withdrawals []map[string]any `json:"withdrawals"`
 	// Present from Cancun onwards.
 	ParentBeaconBlockRoot string `json:"parentBeaconBlockRoot"`
+	// Present from Prague onwards.
+	RequestsHash string `json:"requestsHash"`
 }
 
 // MarshalJSON marshals a typed transaction.
@@ -54,6 +57,8 @@ func (b *Block) MarshalJSON() ([]byte, error) {
 		return json.Marshal(b.Shanghai)
 	case ForkCancun:
 		return json.Marshal(b.Cancun)
+	case ForkPrague:
+		return json.Marshal(b.Prague)
 	default:
 		return nil, fmt.Errorf("unhandled block version %v", b.Fork)
 	}
@@ -68,6 +73,10 @@ func (b *Block) UnmarshalJSON(input []byte) error {
 	}
 
 	switch {
+	case data.RequestsHash != "":
+		b.Fork = ForkPrague
+		b.Prague = &PragueBlock{}
+		err = json.Unmarshal(input, b.Prague)
 	case data.ParentBeaconBlockRoot != "":
 		b.Fork = ForkCancun
 		b.Cancun = &CancunBlock{}
@@ -101,6 +110,8 @@ func (b *Block) BaseFeePerGas() uint64 {
 		return b.Shanghai.BaseFeePerGas
 	case ForkCancun:
 		return b.Cancun.BaseFeePerGas
+	case ForkPrague:
+		return b.Prague.BaseFeePerGas
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -117,6 +128,8 @@ func (b *Block) Difficulty() uint64 {
 		return b.Shanghai.Difficulty
 	case ForkCancun:
 		return b.Cancun.Difficulty
+	case ForkPrague:
+		return b.Prague.Difficulty
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -133,6 +146,8 @@ func (b *Block) ExtraData() []byte {
 		return b.Shanghai.ExtraData
 	case ForkCancun:
 		return b.Cancun.ExtraData
+	case ForkPrague:
+		return b.Prague.ExtraData
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -150,6 +165,8 @@ func (b *Block) FeeRecipient() types.Address {
 		return b.Shanghai.Miner
 	case ForkCancun:
 		return b.Cancun.Miner
+	case ForkPrague:
+		return b.Prague.Miner
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -166,6 +183,8 @@ func (b *Block) GasLimit() uint32 {
 		return b.Shanghai.GasLimit
 	case ForkCancun:
 		return b.Cancun.GasLimit
+	case ForkPrague:
+		return b.Prague.GasLimit
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -182,6 +201,8 @@ func (b *Block) GasUsed() uint32 {
 		return b.Shanghai.GasUsed
 	case ForkCancun:
 		return b.Cancun.GasUsed
+	case ForkPrague:
+		return b.Prague.GasUsed
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -198,6 +219,8 @@ func (b *Block) Hash() types.Hash {
 		return b.Shanghai.Hash
 	case ForkCancun:
 		return b.Cancun.Hash
+	case ForkPrague:
+		return b.Prague.Hash
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -214,6 +237,8 @@ func (b *Block) LogsBloom() []byte {
 		return b.Shanghai.LogsBloom
 	case ForkCancun:
 		return b.Cancun.LogsBloom
+	case ForkPrague:
+		return b.Prague.LogsBloom
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -231,6 +256,8 @@ func (b *Block) Miner() types.Address {
 		return b.Shanghai.Miner
 	case ForkCancun:
 		return b.Cancun.Miner
+	case ForkPrague:
+		return b.Prague.Miner
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -247,6 +274,8 @@ func (b *Block) MixHash() types.Hash {
 		return b.Shanghai.MixHash
 	case ForkCancun:
 		return b.Cancun.MixHash
+	case ForkPrague:
+		return b.Prague.MixHash
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -263,6 +292,8 @@ func (b *Block) Nonce() []byte {
 		return b.Shanghai.Nonce
 	case ForkCancun:
 		return b.Cancun.Nonce
+	case ForkPrague:
+		return b.Prague.Nonce
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -279,6 +310,8 @@ func (b *Block) Number() uint32 {
 		return b.Shanghai.Number
 	case ForkCancun:
 		return b.Cancun.Number
+	case ForkPrague:
+		return b.Prague.Number
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -295,6 +328,8 @@ func (b *Block) ParentHash() types.Hash {
 		return b.Shanghai.ParentHash
 	case ForkCancun:
 		return b.Cancun.ParentHash
+	case ForkPrague:
+		return b.Prague.ParentHash
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -311,6 +346,8 @@ func (b *Block) ReceiptsRoot() types.Root {
 		return b.Shanghai.ReceiptsRoot
 	case ForkCancun:
 		return b.Cancun.ReceiptsRoot
+	case ForkPrague:
+		return b.Prague.ReceiptsRoot
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -327,6 +364,8 @@ func (b *Block) SHA3Uncles() []byte {
 		return b.Shanghai.SHA3Uncles
 	case ForkCancun:
 		return b.Cancun.SHA3Uncles
+	case ForkPrague:
+		return b.Prague.SHA3Uncles
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -343,6 +382,8 @@ func (b *Block) Size() uint32 {
 		return b.Shanghai.Size
 	case ForkCancun:
 		return b.Cancun.Size
+	case ForkPrague:
+		return b.Prague.Size
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -359,6 +400,8 @@ func (b *Block) StateRoot() types.Root {
 		return b.Shanghai.StateRoot
 	case ForkCancun:
 		return b.Cancun.StateRoot
+	case ForkPrague:
+		return b.Prague.StateRoot
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -375,6 +418,8 @@ func (b *Block) Timestamp() time.Time {
 		return b.Shanghai.Timestamp
 	case ForkCancun:
 		return b.Cancun.Timestamp
+	case ForkPrague:
+		return b.Prague.Timestamp
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -391,6 +436,8 @@ func (b *Block) TotalDifficulty() *big.Int {
 		return b.Shanghai.TotalDifficulty
 	case ForkCancun:
 		return b.Cancun.TotalDifficulty
+	case ForkPrague:
+		return b.Prague.TotalDifficulty
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -407,6 +454,8 @@ func (b *Block) Transactions() []*Transaction {
 		return b.Shanghai.Transactions
 	case ForkCancun:
 		return b.Cancun.Transactions
+	case ForkPrague:
+		return b.Prague.Transactions
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -423,6 +472,8 @@ func (b *Block) TransactionsRoot() types.Root {
 		return b.Shanghai.TransactionsRoot
 	case ForkCancun:
 		return b.Cancun.TransactionsRoot
+	case ForkPrague:
+		return b.Prague.TransactionsRoot
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -439,6 +490,8 @@ func (b *Block) Uncles() []types.Hash {
 		return b.Shanghai.Uncles
 	case ForkCancun:
 		return b.Cancun.Uncles
+	case ForkPrague:
+		return b.Prague.Uncles
 	default:
 		panic(fmt.Sprintf("unhandled block version %v", b.Fork))
 	}
@@ -452,6 +505,8 @@ func (b *Block) Withdrawals() ([]*Withdrawal, bool) {
 		return b.Shanghai.Withdrawals, true
 	case ForkCancun:
 		return b.Cancun.Withdrawals, true
+	case ForkPrague:
+		return b.Prague.Withdrawals, true
 	default:
 		return nil, false
 	}
@@ -465,6 +520,8 @@ func (b *Block) WithdrawalsRoot() (types.Root, bool) {
 		return b.Shanghai.WithdrawalsRoot, true
 	case ForkCancun:
 		return b.Cancun.WithdrawalsRoot, true
+	case ForkPrague:
+		return b.Prague.WithdrawalsRoot, true
 	default:
 		return types.Root{}, false
 	}
@@ -476,6 +533,8 @@ func (b *Block) ParentBeaconBlockRoot() (types.Root, bool) {
 	switch b.Fork {
 	case ForkCancun:
 		return b.Cancun.ParentBeaconBlockRoot, true
+	case ForkPrague:
+		return b.Prague.ParentBeaconBlockRoot, true
 	default:
 		return types.Root{}, false
 	}
@@ -487,6 +546,8 @@ func (b *Block) BlobGasUsed() (uint64, bool) {
 	switch b.Fork {
 	case ForkCancun:
 		return b.Cancun.BlobGasUsed, true
+	case ForkPrague:
+		return b.Prague.BlobGasUsed, true
 	default:
 		return 0, false
 	}
@@ -498,8 +559,21 @@ func (b *Block) ExcessBlobGas() (uint64, bool) {
 	switch b.Fork {
 	case ForkCancun:
 		return b.Cancun.ExcessBlobGas, true
+	case ForkPrague:
+		return b.Prague.ExcessBlobGas, true
 	default:
 		return 0, false
+	}
+}
+
+// RequestsHash returns the requests hash of the block.
+// This is not available in all forks, so also returns a presence flag.
+func (b *Block) RequestsHash() (types.Hash, bool) {
+	switch b.Fork {
+	case ForkPrague:
+		return b.Prague.RequestsHash, true
+	default:
+		return types.Hash{}, false
 	}
 }
 

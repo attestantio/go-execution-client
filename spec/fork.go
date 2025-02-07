@@ -34,6 +34,8 @@ const (
 	ForkShanghai
 	// ForkCancun is the Cancun fork.
 	ForkCancun
+	// ForkPrague is the Cancun fork.
+	ForkPrague
 )
 
 var forkStrings = [...]string{
@@ -42,6 +44,7 @@ var forkStrings = [...]string{
 	"london",
 	"shanghai",
 	"cancun",
+	"prague",
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -65,6 +68,8 @@ func (d *Fork) UnmarshalJSON(input []byte) error {
 		*d = ForkShanghai
 	case "cancun":
 		*d = ForkCancun
+	case "prague":
+		*d = ForkPrague
 	default:
 		err = fmt.Errorf("unrecognised fork version %s", string(input))
 	}

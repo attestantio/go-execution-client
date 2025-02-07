@@ -30,6 +30,8 @@ const (
 	TransactionType2
 	// TransactionType3 is a data blob transaction.
 	TransactionType3
+	// TransactionType4 is a Set EOA transaction.
+	TransactionType4
 )
 
 var transactionTypeStrings = [...]string{
@@ -37,6 +39,7 @@ var transactionTypeStrings = [...]string{
 	"0x1",
 	"0x2",
 	"0x3",
+	"0x4",
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -56,6 +59,8 @@ func (d *TransactionType) UnmarshalJSON(input []byte) error {
 		*d = TransactionType2
 	case "3", "0x3":
 		*d = TransactionType3
+	case "4", "0x4":
+		*d = TransactionType4
 	default:
 		err = fmt.Errorf("unrecognised transaction type %s", string(input))
 	}

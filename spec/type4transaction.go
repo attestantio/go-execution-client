@@ -1,4 +1,4 @@
-// Copyright © 2021, 2022 Attestant Limited.
+// Copyright © 2025 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -26,9 +26,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Type2Transaction is a London type 2 transaction.
-type Type2Transaction struct {
-	AccessList []*AccessListEntry
+// Type4Transaction is a Prague type 4 transaction.
+type Type4Transaction struct {
+	AccessList        []*AccessListEntry
+	AuthorizationList []*AuthorizationListEntry
 	// BlockHash is only available for transactions included in a block, so optional.
 	BlockHash *types.Hash
 	// BlockNumber is only available for transactions included in a block, so optional.
@@ -52,32 +53,33 @@ type Type2Transaction struct {
 	Value            *big.Int
 }
 
-// type2TransactionJSON is the spec representation of a type 2 transaction.
-type type2TransactionJSON struct {
-	AccessList           []*AccessListEntry `json:"accessList"`
-	BlockHash            *string            `json:"blockHash,omitempty"`
-	BlockNumber          *string            `json:"blockNumber,omitempty"`
-	ChainID              string             `json:"chainId"`
-	From                 string             `json:"from"`
-	Gas                  string             `json:"gas"`
-	GasPrice             *string            `json:"gasPrice,omitempty"`
-	Hash                 string             `json:"hash"`
-	Input                string             `json:"input"`
-	MaxFeePerGas         string             `json:"maxFeePerGas"`
-	MaxPriorityFeePerGas string             `json:"maxPriorityFeePerGas"`
-	Nonce                string             `json:"nonce"`
-	R                    string             `json:"r"`
-	S                    string             `json:"s"`
-	To                   string             `json:"to"`
-	TransactionIndex     *string            `json:"transactionIndex,omitempty"`
-	Type                 string             `json:"type"`
-	V                    string             `json:"v"`
-	Value                string             `json:"value"`
-	YParity              string             `json:"yParity"`
+// type4TransactionJSON is the spec representation of a type 4 transaction.
+type type4TransactionJSON struct {
+	AccessList           []*AccessListEntry        `json:"accessList"`
+	AuthorizationList    []*AuthorizationListEntry `json:"authorizationList"`
+	BlockHash            *string                   `json:"blockHash,omitempty"`
+	BlockNumber          *string                   `json:"blockNumber,omitempty"`
+	ChainID              string                    `json:"chainId"`
+	From                 string                    `json:"from"`
+	Gas                  string                    `json:"gas"`
+	GasPrice             *string                   `json:"gasPrice,omitempty"`
+	Hash                 string                    `json:"hash"`
+	Input                string                    `json:"input"`
+	MaxFeePerGas         string                    `json:"maxFeePerGas"`
+	MaxPriorityFeePerGas string                    `json:"maxPriorityFeePerGas"`
+	Nonce                string                    `json:"nonce"`
+	R                    string                    `json:"r"`
+	S                    string                    `json:"s"`
+	To                   string                    `json:"to"`
+	TransactionIndex     *string                   `json:"transactionIndex,omitempty"`
+	Type                 string                    `json:"type"`
+	V                    string                    `json:"v"`
+	Value                string                    `json:"value"`
+	YParity              string                    `json:"yParity,omitempty"`
 }
 
-// MarshalJSON marshals a type 2 transaction.
-func (t *Type2Transaction) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals a type 4 transaction.
+func (t *Type4Transaction) MarshalJSON() ([]byte, error) {
 	var blockHash *string
 	if t.BlockHash != nil {
 		tmp := fmt.Sprintf("%#x", *t.BlockHash)
@@ -103,8 +105,9 @@ func (t *Type2Transaction) MarshalJSON() ([]byte, error) {
 		gasPrice = &tmp
 	}
 
-	return json.Marshal(&type2TransactionJSON{
+	return json.Marshal(&type4TransactionJSON{
 		AccessList:           t.AccessList,
+		AuthorizationList:    t.AuthorizationList,
 		BlockHash:            blockHash,
 		BlockNumber:          blockNumber,
 		ChainID:              util.MarshalBigInt(t.ChainID),
@@ -119,7 +122,7 @@ func (t *Type2Transaction) MarshalJSON() ([]byte, error) {
 		R:                    util.MarshalBigInt(t.R),
 		S:                    util.MarshalBigInt(t.S),
 		To:                   to,
-		Type:                 "0x2",
+		Type:                 "0x4",
 		TransactionIndex:     transactionIndex,
 		V:                    util.MarshalBigInt(t.V),
 		Value:                util.MarshalBigInt(t.Value),
@@ -128,8 +131,8 @@ func (t *Type2Transaction) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (t *Type2Transaction) UnmarshalJSON(input []byte) error {
-	var data type2TransactionJSON
+func (t *Type4Transaction) UnmarshalJSON(input []byte) error {
+	var data type4TransactionJSON
 	if err := json.Unmarshal(input, &data); err != nil {
 		return errors.Wrap(err, "invalid JSON")
 	}
@@ -138,21 +141,26 @@ func (t *Type2Transaction) UnmarshalJSON(input []byte) error {
 }
 
 //nolint:gocyclo
-func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
+func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 	var err error
 	var success bool
 
 	// Guard to ensure we are unpacking the correct transaction type.
 	if data.Type == "" {
-		return errors.New("type missing for type 2 transaction")
+		return errors.New("type missing for type 4 transaction")
 	}
-	if data.Type != "0x2" {
+	if data.Type != "0x4" {
 		return errors.New("type incorrect")
 	}
 
 	t.AccessList = data.AccessList
 	if t.AccessList == nil {
 		t.AccessList = make([]*AccessListEntry, 0)
+	}
+
+	t.AuthorizationList = data.AuthorizationList
+	if t.AuthorizationList == nil {
+		t.AuthorizationList = make([]*AuthorizationListEntry, 0)
 	}
 
 	if data.BlockHash != nil {
@@ -273,12 +281,19 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 		return errors.New("value invalid")
 	}
 
-	if data.V == "" {
-		return errors.New("v missing")
-	}
-	t.V, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.V), 16)
-	if !success {
-		return errors.New("v invalid")
+	switch {
+	case data.YParity != "":
+		t.V, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.YParity), 16)
+		if !success {
+			return errors.New("yParity invalid")
+		}
+	case data.V != "":
+		t.V, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.V), 16)
+		if !success {
+			return errors.New("v invalid")
+		}
+	default:
+		return errors.New("yParity and v missing")
 	}
 
 	if data.R == "" {
@@ -301,12 +316,13 @@ func (t *Type2Transaction) unpack(data *type2TransactionJSON) error {
 }
 
 // MarshalRLP returns an RLP representation of the transaction.
-func (t *Type2Transaction) MarshalRLP() ([]byte, error) {
+func (t *Type4Transaction) MarshalRLP() ([]byte, error) {
 	// Create generic buffers, to allow reuse.
 	bufA := bytes.NewBuffer(make([]byte, 0, 1024))
 	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
 
 	// Transaction data.
+	// TODO include authorization list.
 	util.RLPBytes(bufA, t.ChainID.Bytes())
 	util.RLPUint64(bufA, t.Nonce)
 	util.RLPUint64(bufA, t.MaxPriorityFeePerGas)
@@ -346,7 +362,7 @@ func (t *Type2Transaction) MarshalRLP() ([]byte, error) {
 	util.RLPBytes(bufA, t.S.Bytes())
 
 	// EIP-2718 definition.
-	if err := bufB.WriteByte(0x02); err != nil {
+	if err := bufB.WriteByte(0x04); err != nil {
 		return nil, err
 	}
 	util.RLPList(bufB, bufA.Bytes())
@@ -357,7 +373,7 @@ func (t *Type2Transaction) MarshalRLP() ([]byte, error) {
 }
 
 // String returns a string version of the structure.
-func (t *Type2Transaction) String() string {
+func (t *Type4Transaction) String() string {
 	data, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Sprintf("ERR: %v", err)
