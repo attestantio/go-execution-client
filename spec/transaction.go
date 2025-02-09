@@ -107,6 +107,25 @@ func (t *Transaction) AccessList() []*AccessListEntry {
 	}
 }
 
+// AuthorizationList returns the access list of the transaction.
+// This value can be nil, if the transaction does not support authorization lists.
+func (t *Transaction) AuthorizationList() []*AuthorizationListEntry {
+	switch t.Type {
+	case TransactionType0:
+		return nil
+	case TransactionType1:
+		return nil
+	case TransactionType2:
+		return nil
+	case TransactionType3:
+		return nil
+	case TransactionType4:
+		return t.Type4Transaction.AuthorizationList
+	default:
+		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
+	}
+}
+
 // BlobGasUsed returns the blob gas used by the transaction.
 // This value can be nil, if the transaction does not support this (e.g. type 0 transactions).
 func (t *Transaction) BlobGasUsed() *uint32 {
