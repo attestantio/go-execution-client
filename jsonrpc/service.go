@@ -1,4 +1,4 @@
-// Copyright © 2021 Attestant Limited.
+// Copyright © 2021, 2025 Attestant Limited.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,14 +15,16 @@ package jsonrpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
 	execclient "github.com/attestantio/go-execution-client"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	zerologger "github.com/rs/zerolog/log"
 	"github.com/ybbus/jsonrpc/v2"
@@ -30,6 +32,7 @@ import (
 
 // Service is an Ethereum execution client service.
 type Service struct {
+	base             *url.URL
 	address          string
 	webSocketAddress string
 	client           jsonrpc.RPCClient
@@ -46,7 +49,7 @@ var log zerolog.Logger
 func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 	parameters, err := parseAndCheckParameters(params...)
 	if err != nil {
-		return nil, errors.Wrap(err, "problem with parameters")
+		return nil, err
 	}
 
 	// Set logging.
@@ -68,9 +71,9 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 		},
 	}
 
-	address := parameters.address
-	if !strings.HasPrefix(address, "http") {
-		address = fmt.Sprintf("http://%s", parameters.address)
+	base, address, err := parseAddress(parameters.address)
+	if err != nil {
+		return nil, err
 	}
 
 	webSocketAddress := parameters.webSocketAddress
@@ -83,27 +86,31 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 	if !strings.HasPrefix(webSocketAddress, "ws") {
 		webSocketAddress = fmt.Sprintf("ws://%s", webSocketAddress)
 	}
-	log.Trace().Str("address", address).Str("web_socket_address", webSocketAddress).Msg("Addresses configured")
+	if webSocketAddress == "" {
+		webSocketAddress = base.String()
+	}
+	log.Trace().Stringer("address", address).Str("web_socket_address", webSocketAddress).Msg("Addresses configured")
 
-	rpcClient := jsonrpc.NewClientWithOpts(address, &jsonrpc.RPCClientOpts{
+	rpcClient := jsonrpc.NewClientWithOpts(base.String(), &jsonrpc.RPCClientOpts{
 		HTTPClient: client,
 	})
 
 	s := &Service{
 		client:           rpcClient,
-		address:          address,
+		base:             base,
+		address:          address.String(),
 		webSocketAddress: webSocketAddress,
 		timeout:          parameters.timeout,
 	}
 
 	// Fetch static values to confirm the connection is good.
 	if err := s.fetchStaticValues(ctx); err != nil {
-		return nil, errors.Wrap(err, "failed to confirm node connection")
+		return nil, errors.Join(errors.New("failed to confirm node connection"), err)
 	}
 
 	// Handle flags for capabilities.
 	if err := s.checkCapabilities(ctx); err != nil {
-		return nil, errors.Wrap(err, "failed to check capabilities")
+		return nil, errors.Join(errors.New("failed to check capabilities"), err)
 	}
 
 	// Close the service on context done.
@@ -145,4 +152,35 @@ func (s *Service) Address() string {
 
 // close closes the service, freeing up resources.
 func (*Service) close() {
+}
+
+func parseAddress(address string) (*url.URL, *url.URL, error) {
+	if !strings.HasPrefix(address, "http") {
+		address = fmt.Sprintf("http://%s", address)
+	}
+	base, err := url.Parse(address)
+	if err != nil {
+		return nil, nil, errors.Join(errors.New("invalid URL"), err)
+	}
+	// Remove any trailing slash from the path.
+	base.Path = strings.TrimSuffix(base.Path, "/")
+
+	// Attempt to mask any sensitive information in the URL, for logging purposes.
+	baseAddress := *base
+	if _, pwExists := baseAddress.User.Password(); pwExists {
+		// Mask the password.
+		user := baseAddress.User.Username()
+		baseAddress.User = url.UserPassword(user, "xxxxx")
+	}
+	if baseAddress.Path != "" {
+		// Mask the path.
+		baseAddress.Path = "xxxxx"
+	}
+	if baseAddress.RawQuery != "" {
+		// Mask all query values.
+		sensitiveRegex := regexp.MustCompile("=([^&]*)(&)?")
+		baseAddress.RawQuery = sensitiveRegex.ReplaceAllString(baseAddress.RawQuery, "=xxxxx$2")
+	}
+
+	return base, &baseAddress, nil
 }
