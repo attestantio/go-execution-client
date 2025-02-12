@@ -154,6 +154,7 @@ func (s *Service) Address() string {
 func (*Service) close() {
 }
 
+//nolint:revive
 func parseAddress(address string) (*url.URL, *url.URL, error) {
 	if !strings.HasPrefix(address, "http") {
 		address = fmt.Sprintf("http://%s", address)

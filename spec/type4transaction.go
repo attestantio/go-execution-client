@@ -322,7 +322,7 @@ func (t *Type4Transaction) MarshalRLP() ([]byte, error) {
 	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
 
 	// Transaction data.
-	// TODO include authorization list.
+	// Need to include authorization list in future.
 	util.RLPBytes(bufA, t.ChainID.Bytes())
 	util.RLPUint64(bufA, t.Nonce)
 	util.RLPUint64(bufA, t.MaxPriorityFeePerGas)

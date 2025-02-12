@@ -367,7 +367,7 @@ func (t *Type3Transaction) MarshalRLP() ([]byte, error) {
 	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
 
 	// Transaction data.
-	// TODO include blob versioned hashes.
+	// Need to include blob versioned hashes in future.
 	util.RLPBytes(bufA, t.ChainID.Bytes())
 	util.RLPUint64(bufA, t.Nonce)
 	util.RLPUint64(bufA, t.MaxPriorityFeePerGas)
