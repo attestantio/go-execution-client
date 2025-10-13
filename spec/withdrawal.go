@@ -62,49 +62,6 @@ func (w *Withdrawal) UnmarshalJSON(input []byte) error {
 	return w.unpack(&data)
 }
 
-func (w *Withdrawal) unpack(data *withdrawalJSON) error {
-	var err error
-	var success bool
-
-	if data.Index == "" {
-		return errors.New("index missing")
-	}
-	w.Index, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Index), 16, 64)
-	if err != nil {
-		return errors.Wrap(err, "index invalid")
-	}
-
-	if data.ValidatorIndex == "" {
-		return errors.New("validator index missing")
-	}
-	w.ValidatorIndex, err = strconv.ParseUint(util.PreUnmarshalHexString(data.ValidatorIndex), 16, 64)
-	if err != nil {
-		return errors.Wrap(err, "validator index invalid")
-	}
-
-	if data.Address == "" {
-		return errors.New("address missing")
-	}
-	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.Address))
-	if err != nil {
-		return errors.Wrap(err, "address invalid")
-	}
-	if len(address) != len(w.Address) {
-		return fmt.Errorf("incorrect length %d for address", len(address))
-	}
-	copy(w.Address[:], address)
-
-	if data.Amount == "" {
-		return errors.New("amount missing")
-	}
-	w.Amount, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.Amount), 16)
-	if !success {
-		return errors.New("amount invalid")
-	}
-
-	return nil
-}
-
 // String returns a string version of the structure.
 func (w *Withdrawal) String() string {
 	data, err := json.Marshal(w)
@@ -113,4 +70,55 @@ func (w *Withdrawal) String() string {
 	}
 
 	return string(bytes.TrimSuffix(data, []byte("\n")))
+}
+
+func (w *Withdrawal) unpack(data *withdrawalJSON) error {
+	var (
+		err     error
+		success bool
+	)
+
+	if data.Index == "" {
+		return errors.New("index missing")
+	}
+
+	w.Index, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Index), 16, 64)
+	if err != nil {
+		return errors.Wrap(err, "index invalid")
+	}
+
+	if data.ValidatorIndex == "" {
+		return errors.New("validator index missing")
+	}
+
+	w.ValidatorIndex, err = strconv.ParseUint(util.PreUnmarshalHexString(data.ValidatorIndex), 16, 64)
+	if err != nil {
+		return errors.Wrap(err, "validator index invalid")
+	}
+
+	if data.Address == "" {
+		return errors.New("address missing")
+	}
+
+	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.Address))
+	if err != nil {
+		return errors.Wrap(err, "address invalid")
+	}
+
+	if len(address) != len(w.Address) {
+		return fmt.Errorf("incorrect length %d for address", len(address))
+	}
+
+	copy(w.Address[:], address)
+
+	if data.Amount == "" {
+		return errors.New("amount missing")
+	}
+
+	w.Amount, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.Amount), 16)
+	if !success {
+		return errors.New("amount invalid")
+	}
+
+	return nil
 }

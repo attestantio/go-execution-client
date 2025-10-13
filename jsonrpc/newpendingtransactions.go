@@ -46,11 +46,14 @@ func (s *Service) NewPendingTransactions(ctx context.Context, ch chan *spec.Tran
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to obtain subscription response")
 	}
+
 	log.Trace().Str("msg", string(msg)).Msg("Received subscription response")
+
 	res := newPendingTransactionsResult{}
 	if err := json.Unmarshal(msg, &res); err != nil {
 		return nil, errors.Wrap(err, "failed to obtain subscription ID")
 	}
+
 	log.Trace().Str("subscription", fmt.Sprintf("%#x", res.Result)).Msg("Received subscription ID")
 
 	// Handle incoming messages.
@@ -67,16 +70,20 @@ func (s *Service) NewPendingTransactions(ctx context.Context, ch chan *spec.Tran
 func (s *Service) receiveNewPendingTransactionMsg(ctx context.Context, conn *websocket.Conn, ch chan *spec.Transaction) {
 	for {
 		_, msg, err := conn.ReadMessage()
+
 		if ctx.Err() != nil {
 			// Context is done; leave.
 			return
 		}
+
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to read received message")
 
 			continue
 		}
+
 		log.Info().Str("msg", string(msg)).Msg("Received message")
+
 		res := newPendingTransactionsEvent{}
 		if err := json.Unmarshal(msg, &res); err != nil {
 			log.Error().Err(err).Msg("Failed to unmarshal message")
@@ -90,6 +97,7 @@ func (s *Service) receiveNewPendingTransactionMsg(ctx context.Context, conn *web
 
 			continue
 		}
+
 		ch <- tx
 	}
 }
@@ -105,6 +113,7 @@ func (*Service) closeSocketOnCtxDone(ctx context.Context, conn *websocket.Conn) 
 
 		return
 	}
+
 	if err := conn.Close(); err != nil {
 		log.Error().Err(err).Msg("Failed to close websocket")
 
@@ -129,6 +138,7 @@ func (r *newPendingTransactionsResult) UnmarshalJSON(input []byte) error {
 	}
 
 	var err error
+
 	r.Result, err = util.StrToByteArray("result", data.Result)
 	if err != nil {
 		return err
@@ -159,10 +169,12 @@ func (e *newPendingTransactionsEventParams) UnmarshalJSON(input []byte) error {
 	}
 
 	var err error
+
 	e.Subscription, err = util.StrToByteArray("subscription", data.Subscription)
 	if err != nil {
 		return err
 	}
+
 	e.Result, err = util.StrToHash("result", data.Result)
 	if err != nil {
 		return err

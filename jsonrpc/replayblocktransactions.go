@@ -28,6 +28,7 @@ func (s *Service) ReplayBlockTransactions(ctx context.Context, blockID string) (
 	if strings.HasPrefix(blockID, "0x") {
 		return nil, errors.New("fetch by block hash not implemented")
 	}
+
 	height, err := strconv.ParseInt(blockID, 10, 64)
 	if err != nil {
 		return nil, errors.Wrap(err, "unhandled block ID")
@@ -40,7 +41,9 @@ func (s *Service) replayBlockTransactionsAtHeight(_ context.Context, height int6
 	var transactionResults []*api.TransactionResult
 
 	log.Trace().Int64("height", height).Msg("Replaying block transactions")
+
 	var err error
+
 	switch {
 	case height < 0:
 		err = s.client.CallFor(&transactionResults, "trace_replayBlockTransactions", "latest", []string{"stateDiff"})
@@ -54,6 +57,7 @@ func (s *Service) replayBlockTransactionsAtHeight(_ context.Context, height int6
 			[]string{"stateDiff"},
 		)
 	}
+
 	if err != nil {
 		return nil, err
 	}

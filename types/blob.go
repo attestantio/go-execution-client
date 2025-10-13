@@ -41,6 +41,7 @@ func (b Blob) Format(state fmt.State, v rune) {
 		if state.Flag('#') {
 			format = "#" + format
 		}
+
 		fmt.Fprintf(state, "%"+format, b[:])
 	default:
 		fmt.Fprintf(state, "%"+format, b[:])
@@ -56,9 +57,11 @@ func (b *Blob) UnmarshalJSON(input []byte) error {
 	if !bytes.HasPrefix(input, []byte{'"', '0', 'x'}) {
 		return errors.New("invalid prefix")
 	}
+
 	if !bytes.HasSuffix(input, []byte{'"'}) {
 		return errors.New("invalid suffix")
 	}
+
 	if len(input) != 1+2+BlobLength*2+1 {
 		return errors.New("incorrect length")
 	}

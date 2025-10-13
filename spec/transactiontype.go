@@ -50,6 +50,7 @@ func (d *TransactionType) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements json.Unmarshaler.
 func (d *TransactionType) UnmarshalJSON(input []byte) error {
 	var err error
+
 	switch strings.ToLower(strings.Trim(string(input), `"`)) {
 	case "", "0", "0x", "0x0":
 		*d = TransactionType0

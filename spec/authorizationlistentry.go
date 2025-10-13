@@ -68,62 +68,6 @@ func (a *AuthorizationListEntry) UnmarshalJSON(input []byte) error {
 	return a.unpack(&data)
 }
 
-func (a *AuthorizationListEntry) unpack(data *authorizationListEntryJSON) error {
-	var success bool
-	var err error
-
-	if data.Address == "" {
-		return errors.New("address missing")
-	}
-	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.Address))
-	if err != nil {
-		return errors.Wrap(err, "address invalid")
-	}
-	copy(a.Address[:], address)
-
-	if data.ChainID == "" {
-		return errors.New("chain id missing")
-	}
-	a.ChainID, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.ChainID), 16)
-	if !success {
-		return errors.New("chain id invalid")
-	}
-
-	if data.Nonce == "" {
-		return errors.New("nonce missing")
-	}
-	a.Nonce, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Nonce), 16, 64)
-	if err != nil {
-		return errors.Wrap(err, "nonce invalid")
-	}
-
-	if data.R == "" {
-		return errors.New("r missing")
-	}
-	a.R, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.R), 16)
-	if !success {
-		return errors.New("r invalid")
-	}
-
-	if data.S == "" {
-		return errors.New("s missing")
-	}
-	a.S, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.S), 16)
-	if !success {
-		return errors.New("s invalid")
-	}
-
-	if data.YParity == "" {
-		return errors.New("yParity missing")
-	}
-	a.YParity, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.YParity), 16)
-	if !success {
-		return errors.New("yParity invalid")
-	}
-
-	return nil
-}
-
 // String returns a string version of the structure.
 func (a *AuthorizationListEntry) String() string {
 	data, err := json.Marshal(a)
@@ -132,4 +76,69 @@ func (a *AuthorizationListEntry) String() string {
 	}
 
 	return string(bytes.TrimSuffix(data, []byte("\n")))
+}
+
+func (a *AuthorizationListEntry) unpack(data *authorizationListEntryJSON) error {
+	var (
+		success bool
+		err     error
+	)
+
+	if data.Address == "" {
+		return errors.New("address missing")
+	}
+
+	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.Address))
+	if err != nil {
+		return errors.Wrap(err, "address invalid")
+	}
+
+	copy(a.Address[:], address)
+
+	if data.ChainID == "" {
+		return errors.New("chain id missing")
+	}
+
+	a.ChainID, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.ChainID), 16)
+	if !success {
+		return errors.New("chain id invalid")
+	}
+
+	if data.Nonce == "" {
+		return errors.New("nonce missing")
+	}
+
+	a.Nonce, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Nonce), 16, 64)
+	if err != nil {
+		return errors.Wrap(err, "nonce invalid")
+	}
+
+	if data.R == "" {
+		return errors.New("r missing")
+	}
+
+	a.R, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.R), 16)
+	if !success {
+		return errors.New("r invalid")
+	}
+
+	if data.S == "" {
+		return errors.New("s missing")
+	}
+
+	a.S, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.S), 16)
+	if !success {
+		return errors.New("s invalid")
+	}
+
+	if data.YParity == "" {
+		return errors.New("yParity missing")
+	}
+
+	a.YParity, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.YParity), 16)
+	if !success {
+		return errors.New("yParity invalid")
+	}
+
+	return nil
 }

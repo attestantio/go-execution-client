@@ -67,6 +67,7 @@ func (b *Block) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements json.Unmarshaler.
 func (b *Block) UnmarshalJSON(input []byte) error {
 	var data blockTypeJSON
+
 	err := json.Unmarshal(input, &data)
 	if err != nil {
 		return errors.Wrap(err, "invalid JSON")

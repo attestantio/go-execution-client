@@ -32,7 +32,7 @@ type TransactionStateChange struct {
 type transactionStateChangeJSON struct {
 	Creation   string                                `json:"+,omitempty"`
 	Alteration *transactionStateChangeAlterationJSON `json:"*,omitempty"`
-	Deletion   string                                `json:"-,omitempty"`
+	Deletion   string                                `json:"-,omitempty"` //nolint:revive // omitempty required for correct behavior
 }
 
 type transactionStateChangeAlterationJSON struct {
@@ -72,6 +72,16 @@ func (t *TransactionStateChange) UnmarshalJSON(input []byte) error {
 	return t.unpack(&data)
 }
 
+// String returns a string version of the structure.
+func (t *TransactionStateChange) String() string {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(data)
+}
+
 func (t *TransactionStateChange) unpack(data *transactionStateChangeJSON) error {
 	var err error
 	if data.Creation != "" {
@@ -103,14 +113,4 @@ func (t *TransactionStateChange) unpack(data *transactionStateChangeJSON) error 
 	}
 
 	return nil
-}
-
-// String returns a string version of the structure.
-func (t *TransactionStateChange) String() string {
-	data, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(data)
 }

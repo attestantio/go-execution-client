@@ -39,6 +39,7 @@ func (h Hash) Format(state fmt.State, v rune) {
 		if state.Flag('#') {
 			format = "#" + format
 		}
+
 		fmt.Fprintf(state, "%"+format, h[:])
 	default:
 		fmt.Fprintf(state, "%"+format, h[:])
@@ -66,6 +67,7 @@ func (h VersionedHash) Format(state fmt.State, v rune) {
 		if state.Flag('#') {
 			format = "#" + format
 		}
+
 		fmt.Fprintf(state, "%"+format, h[:])
 	default:
 		fmt.Fprintf(state, "%"+format, h[:])
@@ -81,9 +83,11 @@ func (h *VersionedHash) UnmarshalJSON(input []byte) error {
 	if !bytes.HasPrefix(input, []byte{'"', '0', 'x'}) {
 		return errors.New("invalid prefix")
 	}
+
 	if !bytes.HasSuffix(input, []byte{'"'}) {
 		return errors.New("invalid suffix")
 	}
+
 	if len(input) != 1+2+VersionedHashLength*2+1 {
 		return errors.New("incorrect length")
 	}
@@ -128,6 +132,7 @@ func (r Root) Format(state fmt.State, v rune) {
 		if state.Flag('#') {
 			format = "#" + format
 		}
+
 		fmt.Fprintf(state, "%"+format, r[:])
 	default:
 		fmt.Fprintf(state, "%"+format, r[:])

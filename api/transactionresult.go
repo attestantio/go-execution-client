@@ -60,6 +60,16 @@ func (t *TransactionResult) UnmarshalJSON(input []byte) error {
 	return t.unpack(&transactionResultJSON)
 }
 
+// String returns a string version of the structure.
+func (t *TransactionResult) String() string {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(data)
+}
+
 func (t *TransactionResult) unpack(data *transactionResultJSON) error {
 	var err error
 
@@ -71,13 +81,16 @@ func (t *TransactionResult) unpack(data *transactionResultJSON) error {
 	}
 
 	stateDiff := make(map[types.Address]*TransactionStateDiff)
+
 	for k, v := range data.StateDiff {
 		address, err := util.StrToAddress("address", k)
 		if err != nil {
 			return err
 		}
+
 		stateDiff[address] = v
 	}
+
 	t.StateDiff = stateDiff
 
 	t.TransactionHash, err = util.StrToHash("transaction hash", data.TransactionHash)
@@ -86,14 +99,4 @@ func (t *TransactionResult) unpack(data *transactionResultJSON) error {
 	}
 
 	return nil
-}
-
-// String returns a string version of the structure.
-func (t *TransactionResult) String() string {
-	data, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(data)
 }

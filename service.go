@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package client provides interfaces for interacting with Ethereum execution clients.
+// The package name "client" is intentionally shorter than the module path for API clarity.
 package client
 
 import (

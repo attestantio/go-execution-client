@@ -31,9 +31,11 @@ func (s *Service) Balance(ctx context.Context, address types.Address, blockID st
 	if blockID == "" || blockID == "latest" {
 		return s.balanceAtHeight(ctx, address, -1)
 	}
+
 	if strings.HasPrefix(blockID, "0x") {
 		return s.balanceAtHash(ctx, address, blockID)
 	}
+
 	height, err := strconv.ParseInt(blockID, 10, 64)
 	if err != nil {
 		return nil, errors.Wrap(err, "unhandled block ID")
@@ -66,14 +68,17 @@ func (s *Service) balanceAtHeight(_ context.Context,
 	*big.Int,
 	error,
 ) {
-	var balanceStr string
-	var err error
+	var (
+		balanceStr string
+		err        error
+	)
 
 	if height == -1 {
 		err = s.client.CallFor(&balanceStr, "eth_getBalance", fmt.Sprintf("%#x", address), "latest")
 	} else {
 		err = s.client.CallFor(&balanceStr, "eth_getBalance", fmt.Sprintf("%#x", address), fmt.Sprintf("%#x", height))
 	}
+
 	if err != nil {
 		return nil, err
 	}

@@ -54,6 +54,7 @@ func (s *SyncState) UnmarshalJSON(input []byte) error {
 	if bytes.HasPrefix(input, []byte("{")) {
 		// It's an object.
 		s.Syncing = true
+
 		var data syncStateJSON
 		if err := json.Unmarshal(input, &data); err != nil {
 			return errors.Wrap(err, "invalid JSON")
@@ -75,6 +76,16 @@ func (s *SyncState) UnmarshalJSON(input []byte) error {
 	return fmt.Errorf("invalid sync state JSON %q", string(input))
 }
 
+// String returns a string version of the structure.
+func (s *SyncState) String() string {
+	data, err := json.Marshal(s)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(data)
+}
+
 func (s *SyncState) unpack(data *syncStateJSON) error {
 	var err error
 
@@ -94,14 +105,4 @@ func (s *SyncState) unpack(data *syncStateJSON) error {
 	}
 
 	return nil
-}
-
-// String returns a string version of the structure.
-func (s *SyncState) String() string {
-	data, err := json.Marshal(s)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(data)
 }

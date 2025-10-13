@@ -23,6 +23,7 @@ import (
 
 func (s *Service) blockIDToHeight(ctx context.Context, blockID string) (int64, error) {
 	var height int64
+
 	switch {
 	case blockID == "":
 		height = -1
@@ -31,12 +32,15 @@ func (s *Service) blockIDToHeight(ctx context.Context, blockID string) (int64, e
 		if err != nil {
 			return -1, err
 		}
+
 		if block == nil {
 			return -1, errors.New("block not found")
 		}
+
 		height = int64(block.Berlin.Number)
 	default:
 		var err error
+
 		height, err = strconv.ParseInt(blockID, 10, 64)
 		if err != nil {
 			return -1, errors.Wrap(err, "unhandled block ID")

@@ -81,25 +81,33 @@ type type4TransactionJSON struct {
 // MarshalJSON marshals a type 4 transaction.
 func (t *Type4Transaction) MarshalJSON() ([]byte, error) {
 	var blockHash *string
+
 	if t.BlockHash != nil {
 		tmp := fmt.Sprintf("%#x", *t.BlockHash)
 		blockHash = &tmp
 	}
+
 	var blockNumber *string
+
 	if t.BlockNumber != nil {
 		tmp := util.MarshalUint32(*t.BlockNumber)
 		blockNumber = &tmp
 	}
+
 	to := ""
 	if t.To != nil {
 		to = util.MarshalByteArray(t.To[:])
 	}
+
 	var transactionIndex *string
+
 	if t.TransactionIndex != nil {
 		tmp := util.MarshalUint32(*t.TransactionIndex)
 		transactionIndex = &tmp
 	}
+
 	var gasPrice *string
+
 	if t.GasPrice != nil {
 		tmp := util.MarshalUint64(*t.GasPrice)
 		gasPrice = &tmp
@@ -140,15 +148,95 @@ func (t *Type4Transaction) UnmarshalJSON(input []byte) error {
 	return t.unpack(&data)
 }
 
+// String returns a string version of the structure.
+func (t *Type4Transaction) String() string {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(bytes.TrimSuffix(data, []byte("\n")))
+}
+
+// MarshalRLP returns an RLP representation of the transaction.
+func (t *Type4Transaction) MarshalRLP() ([]byte, error) {
+	// Create generic buffers, to allow reuse.
+	bufA := bytes.NewBuffer(make([]byte, 0, 1024))
+	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
+
+	// Transaction data.
+	// Need to include authorization list in future.
+	util.RLPBytes(bufA, t.ChainID.Bytes())
+	util.RLPUint64(bufA, t.Nonce)
+	util.RLPUint64(bufA, t.MaxPriorityFeePerGas)
+	util.RLPUint64(bufA, t.MaxFeePerGas)
+	util.RLPUint64(bufA, uint64(t.Gas))
+
+	if t.To != nil {
+		util.RLPAddress(bufA, *t.To)
+	} else {
+		util.RLPNil(bufA)
+	}
+
+	if t.Value != nil {
+		util.RLPBytes(bufA, t.Value.Bytes())
+	} else {
+		util.RLPNil(bufA)
+	}
+
+	util.RLPBytes(bufA, t.Input)
+
+	if len(t.AccessList) != 0 {
+		entryBuf := bytes.NewBuffer(make([]byte, 0, 1024))
+		addressBuf := bytes.NewBuffer(make([]byte, 0, 20))
+
+		for _, accessListEntry := range t.AccessList {
+			util.RLPBytes(entryBuf, accessListEntry.Address)
+
+			for _, key := range accessListEntry.StorageKeys {
+				util.RLPBytes(addressBuf, key)
+			}
+
+			util.RLPList(entryBuf, addressBuf.Bytes())
+			addressBuf.Reset()
+			util.RLPList(bufB, entryBuf.Bytes())
+			entryBuf.Reset()
+		}
+	}
+
+	util.RLPList(bufA, bufB.Bytes())
+	bufB.Reset()
+
+	// Signature.
+	util.RLPBytes(bufA, t.V.Bytes())
+	util.RLPBytes(bufA, t.R.Bytes())
+	util.RLPBytes(bufA, t.S.Bytes())
+
+	// EIP-2718 definition.
+	if err := bufB.WriteByte(0x04); err != nil {
+		return nil, err
+	}
+
+	util.RLPList(bufB, bufA.Bytes())
+	bufA.Reset()
+	util.RLPBytes(bufA, bufB.Bytes())
+
+	return bufA.Bytes(), nil
+}
+
 //nolint:gocyclo
 func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
-	var err error
-	var success bool
+	var (
+		err     error
+		success bool
+	)
 
 	// Guard to ensure we are unpacking the correct transaction type.
+
 	if data.Type == "" {
 		return errors.New("type missing for type 4 transaction")
 	}
+
 	if data.Type != "0x4" {
 		return errors.New("type incorrect")
 	}
@@ -168,16 +256,20 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 		if err != nil {
 			return errors.Wrap(err, "block hash invalid")
 		}
+
 		blockHash := types.Hash{}
 		copy(blockHash[:], hash)
 		t.BlockHash = &blockHash
+
 		if data.BlockNumber == nil {
 			return errors.New("block number missing")
 		}
+
 		tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(*data.BlockNumber), 16, 32)
 		if err != nil {
 			return errors.Wrap(err, "block number invalid")
 		}
+
 		blockNumber := uint32(tmp)
 		t.BlockNumber = &blockNumber
 	}
@@ -185,6 +277,7 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 	if data.ChainID == "" {
 		return errors.New("chain id missing")
 	}
+
 	t.ChainID, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.ChainID), 16)
 	if !success {
 		return errors.New("chain id invalid")
@@ -193,19 +286,23 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 	if data.From == "" {
 		return errors.New("from missing")
 	}
+
 	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.From))
 	if err != nil {
 		return errors.Wrap(err, "from invalid")
 	}
+
 	copy(t.From[:], address)
 
 	if data.Gas == "" {
 		return errors.New("gas missing")
 	}
+
 	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.Gas), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "gas invalid")
 	}
+
 	t.Gas = uint32(tmp)
 
 	if data.GasPrice != nil {
@@ -213,16 +310,19 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 		if err != nil {
 			return errors.Wrap(err, "gas price invalid")
 		}
+
 		t.GasPrice = &tmp
 	}
 
 	if data.Hash == "" {
 		return errors.New("hash missing")
 	}
+
 	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.Hash))
 	if err != nil {
 		return errors.Wrap(err, "hash invalid")
 	}
+
 	copy(t.Hash[:], hash)
 
 	t.Input, err = hex.DecodeString(util.PreUnmarshalHexString(data.Input))
@@ -233,6 +333,7 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 	if data.MaxFeePerGas == "" {
 		return errors.New("max fee per gas missing")
 	}
+
 	t.MaxFeePerGas, err = strconv.ParseUint(util.PreUnmarshalHexString(data.MaxFeePerGas), 16, 64)
 	if err != nil {
 		return errors.Wrap(err, "max fee per gas invalid")
@@ -241,6 +342,7 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 	if data.MaxPriorityFeePerGas == "" {
 		return errors.New("max priority fee per gas missing")
 	}
+
 	t.MaxPriorityFeePerGas, err = strconv.ParseUint(util.PreUnmarshalHexString(data.MaxPriorityFeePerGas), 16, 64)
 	if err != nil {
 		return errors.Wrap(err, "max priority fee per gas invalid")
@@ -249,6 +351,7 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 	if data.Nonce == "" {
 		return errors.New("nonce missing")
 	}
+
 	t.Nonce, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Nonce), 16, 64)
 	if err != nil {
 		return errors.Wrap(err, "nonce invalid")
@@ -259,6 +362,7 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 		if err != nil {
 			return errors.Wrap(err, "to invalid")
 		}
+
 		var to types.Address
 		copy(to[:], address)
 		t.To = &to
@@ -269,6 +373,7 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 		if err != nil {
 			return errors.Wrap(err, "transaction index invalid")
 		}
+
 		transactionIndex := uint32(tmp)
 		t.TransactionIndex = &transactionIndex
 	}
@@ -276,6 +381,7 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 	if data.Value == "" {
 		return errors.New("value missing")
 	}
+
 	t.Value, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.Value), 16)
 	if !success {
 		return errors.New("value invalid")
@@ -299,6 +405,7 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 	if data.R == "" {
 		return errors.New("r missing")
 	}
+
 	t.R, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.R), 16)
 	if !success {
 		return errors.New("r invalid")
@@ -307,77 +414,11 @@ func (t *Type4Transaction) unpack(data *type4TransactionJSON) error {
 	if data.S == "" {
 		return errors.New("s missing")
 	}
+
 	t.S, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.S), 16)
 	if !success {
 		return errors.New("s invalid")
 	}
 
 	return nil
-}
-
-// MarshalRLP returns an RLP representation of the transaction.
-func (t *Type4Transaction) MarshalRLP() ([]byte, error) {
-	// Create generic buffers, to allow reuse.
-	bufA := bytes.NewBuffer(make([]byte, 0, 1024))
-	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
-
-	// Transaction data.
-	// Need to include authorization list in future.
-	util.RLPBytes(bufA, t.ChainID.Bytes())
-	util.RLPUint64(bufA, t.Nonce)
-	util.RLPUint64(bufA, t.MaxPriorityFeePerGas)
-	util.RLPUint64(bufA, t.MaxFeePerGas)
-	util.RLPUint64(bufA, uint64(t.Gas))
-	if t.To != nil {
-		util.RLPAddress(bufA, *t.To)
-	} else {
-		util.RLPNil(bufA)
-	}
-	if t.Value != nil {
-		util.RLPBytes(bufA, t.Value.Bytes())
-	} else {
-		util.RLPNil(bufA)
-	}
-	util.RLPBytes(bufA, t.Input)
-	if len(t.AccessList) != 0 {
-		entryBuf := bytes.NewBuffer(make([]byte, 0, 1024))
-		addressBuf := bytes.NewBuffer(make([]byte, 0, 20))
-		for _, accessListEntry := range t.AccessList {
-			util.RLPBytes(entryBuf, accessListEntry.Address)
-			for _, key := range accessListEntry.StorageKeys {
-				util.RLPBytes(addressBuf, key)
-			}
-			util.RLPList(entryBuf, addressBuf.Bytes())
-			addressBuf.Reset()
-			util.RLPList(bufB, entryBuf.Bytes())
-			entryBuf.Reset()
-		}
-	}
-	util.RLPList(bufA, bufB.Bytes())
-	bufB.Reset()
-
-	// Signature.
-	util.RLPBytes(bufA, t.V.Bytes())
-	util.RLPBytes(bufA, t.R.Bytes())
-	util.RLPBytes(bufA, t.S.Bytes())
-
-	// EIP-2718 definition.
-	if err := bufB.WriteByte(0x04); err != nil {
-		return nil, err
-	}
-	util.RLPList(bufB, bufA.Bytes())
-	bufA.Reset()
-	util.RLPBytes(bufA, bufB.Bytes())
-
-	return bufA.Bytes(), nil
-}
-
-// String returns a string version of the structure.
-func (t *Type4Transaction) String() string {
-	data, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(bytes.TrimSuffix(data, []byte("\n")))
 }

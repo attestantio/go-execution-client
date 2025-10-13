@@ -54,6 +54,7 @@ func (e *EventsFilter) MarshalJSON() ([]byte, error) {
 	for _, topic := range e.Topics {
 		topics = append(topics, util.MarshalByteArray(topic[:]))
 	}
+
 	eventsFilterJSON.Topics = topics
 
 	return json.Marshal(eventsFilterJSON)
@@ -69,6 +70,16 @@ func (e *EventsFilter) UnmarshalJSON(input []byte) error {
 	return e.unpack(&eventsFilterJSON)
 }
 
+// String returns a string version of the structure.
+func (e *EventsFilter) String() string {
+	data, err := json.Marshal(e)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(data)
+}
+
 func (e *EventsFilter) unpack(data *eventsFilterJSON) error {
 	switch strings.ToLower(data.FromBlock) {
 	case "":
@@ -81,6 +92,7 @@ func (e *EventsFilter) unpack(data *eventsFilterJSON) error {
 		if _, err := util.StrToUint32("from block", data.FromBlock); err != nil {
 			return err
 		}
+
 		e.FromBlock = data.FromBlock
 	}
 
@@ -95,6 +107,7 @@ func (e *EventsFilter) unpack(data *eventsFilterJSON) error {
 		if _, err := util.StrToUint32("to block", data.ToBlock); err != nil {
 			return err
 		}
+
 		e.ToBlock = data.ToBlock
 	}
 
@@ -103,11 +116,13 @@ func (e *EventsFilter) unpack(data *eventsFilterJSON) error {
 		if err != nil {
 			return err
 		}
+
 		e.Address = &address
 	}
 
 	if data.Topics != nil {
 		var err error
+
 		topics := make([]types.Hash, len(data.Topics))
 		for i, topic := range data.Topics {
 			topics[i], err = util.StrToHash("topic", topic)
@@ -115,18 +130,9 @@ func (e *EventsFilter) unpack(data *eventsFilterJSON) error {
 				return err
 			}
 		}
+
 		e.Topics = topics
 	}
 
 	return nil
-}
-
-// String returns a string version of the structure.
-func (e *EventsFilter) String() string {
-	data, err := json.Marshal(e)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(data)
 }

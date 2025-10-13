@@ -314,6 +314,7 @@ func rlpLength(buf io.Writer, length int, offset int) {
 	}
 
 	numBytes := int(math.Log2(float64(length)))/8 + 1
+
 	_, _ = buf.Write(singleBytes[numBytes+offset+55])
 	for i := 0; i < numBytes; i++ {
 		msb := length >> ((numBytes - i - 1) * 8)
@@ -340,6 +341,7 @@ func RLPUint64(buf io.Writer, input uint64) {
 
 		return
 	}
+
 	if input <= 0x7f {
 		_, _ = buf.Write(singleBytes[input])
 
@@ -347,10 +349,12 @@ func RLPUint64(buf io.Writer, input uint64) {
 	}
 
 	numBytes := int(math.Log2(float64(input)))/8 + 1
+
 	res := make([]byte, numBytes)
 	for i := numBytes - 1; i >= 0; i-- {
 		res[i] = byte(input % 256)
 		input >>= 8
 	}
+
 	RLPBytes(buf, res)
 }

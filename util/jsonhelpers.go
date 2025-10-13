@@ -127,13 +127,16 @@ func StrToAddress(name string, input string) (types.Address, error) {
 	if input == "" {
 		return res, fmt.Errorf("%s missing", name)
 	}
+
 	val, err := hex.DecodeString(PreUnmarshalHexString(input))
 	if err != nil {
 		return res, errors.Wrap(err, fmt.Sprintf("%s invalid", name))
 	}
+
 	if len(val) != len(res) {
 		return res, fmt.Errorf("%s incorrect length", name)
 	}
+
 	copy(res[:], val)
 
 	return res, nil
@@ -144,6 +147,7 @@ func StrToBigInt(name string, input string) (*big.Int, error) {
 	if input == "" {
 		return nil, fmt.Errorf("%s missing", name)
 	}
+
 	res, success := new(big.Int).SetString(PreUnmarshalHexString(input), 16)
 	if !success {
 		return nil, fmt.Errorf("%s invalid", name)
@@ -157,6 +161,7 @@ func StrToByteArray(name string, input string) ([]byte, error) {
 	if input == "" {
 		return nil, fmt.Errorf("%s missing", name)
 	}
+
 	res, err := hex.DecodeString(PreUnmarshalHexString(input))
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("%s invalid", name))
@@ -171,13 +176,16 @@ func StrToHash(name string, input string) (types.Hash, error) {
 	if input == "" {
 		return res, fmt.Errorf("%s missing", name)
 	}
+
 	val, err := hex.DecodeString(PreUnmarshalHexString(input))
 	if err != nil {
 		return res, errors.Wrap(err, fmt.Sprintf("%s invalid", name))
 	}
+
 	if len(val) != len(res) {
 		return res, fmt.Errorf("%s incorrect length", name)
 	}
+
 	copy(res[:], val)
 
 	return res, nil
@@ -189,13 +197,16 @@ func StrToRoot(name string, input string) (types.Root, error) {
 	if input == "" {
 		return res, fmt.Errorf("%s missing", name)
 	}
+
 	val, err := hex.DecodeString(PreUnmarshalHexString(input))
 	if err != nil {
 		return res, errors.Wrap(err, fmt.Sprintf("%s invalid", name))
 	}
+
 	if len(val) != len(res) {
 		return res, fmt.Errorf("%s incorrect length", name)
 	}
+
 	copy(res[:], val)
 
 	return res, nil
@@ -203,16 +214,20 @@ func StrToRoot(name string, input string) (types.Root, error) {
 
 // StrToTime turns a string in to a time.Time.
 func StrToTime(name string, input string) (time.Time, error) {
-	var res time.Time
-	var err error
+	var (
+		res time.Time
+		err error
+	)
 
 	if input == "" {
 		return res, fmt.Errorf("%s missing", name)
 	}
+
 	val, err := strconv.ParseUint(PreUnmarshalHexString(input), 16, 64)
 	if err != nil {
 		return res, errors.Wrap(err, fmt.Sprintf("%s invalid", name))
 	}
+
 	res = time.Unix(int64(val), 0)
 
 	return res, nil
@@ -220,12 +235,15 @@ func StrToTime(name string, input string) (time.Time, error) {
 
 // StrToUint64 turns a string in to a uint64.
 func StrToUint64(name string, input string) (uint64, error) {
-	var res uint64
-	var err error
+	var (
+		res uint64
+		err error
+	)
 
 	if input == "" {
 		return res, fmt.Errorf("%s missing", name)
 	}
+
 	res, err = strconv.ParseUint(PreUnmarshalHexString(input), 16, 64)
 	if err != nil {
 		return res, errors.Wrap(err, fmt.Sprintf("%s invalid", name))
@@ -236,12 +254,15 @@ func StrToUint64(name string, input string) (uint64, error) {
 
 // StrToUint32 turns a string in to a uint32.
 func StrToUint32(name string, input string) (uint32, error) {
-	var res uint64
-	var err error
+	var (
+		res uint64
+		err error
+	)
 
 	if input == "" {
 		return 0, fmt.Errorf("%s missing", name)
 	}
+
 	res, err = strconv.ParseUint(PreUnmarshalHexString(input), 16, 32)
 	if err != nil {
 		return 0, errors.Wrap(err, fmt.Sprintf("%s invalid", name))

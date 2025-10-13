@@ -59,6 +59,7 @@ func (d *Fork) UnmarshalJSON(input []byte) error {
 	}
 
 	var err error
+
 	switch strings.ToLower(strings.Trim(string(input), `"`)) {
 	case "berlin":
 		*d = ForkBerlin

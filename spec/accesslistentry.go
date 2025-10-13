@@ -58,12 +58,23 @@ func (a *AccessListEntry) UnmarshalJSON(input []byte) error {
 	return a.unpack(&data)
 }
 
+// String returns a string version of the structure.
+func (a *AccessListEntry) String() string {
+	data, err := json.Marshal(a)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(bytes.TrimSuffix(data, []byte("\n")))
+}
+
 func (a *AccessListEntry) unpack(data *accessListEntryJSON) error {
 	var err error
 
 	if data.Address == "" {
 		return errors.New("address missing")
 	}
+
 	a.Address, err = hex.DecodeString(util.PreUnmarshalHexString(data.Address))
 	if err != nil {
 		return errors.Wrap(err, "address invalid")
@@ -75,18 +86,9 @@ func (a *AccessListEntry) unpack(data *accessListEntryJSON) error {
 		if err != nil {
 			return errors.Wrap(err, "storage key invalid")
 		}
+
 		a.StorageKeys = append(a.StorageKeys, key)
 	}
 
 	return nil
-}
-
-// String returns a string version of the structure.
-func (a *AccessListEntry) String() string {
-	data, err := json.Marshal(a)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(bytes.TrimSuffix(data, []byte("\n")))
 }

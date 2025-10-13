@@ -1,8 +1,8 @@
 module github.com/attestantio/go-execution-client
 
-go 1.22.0
+go 1.25
 
-toolchain go1.23.2
+toolchain go1.25.2
 
 require (
 	github.com/gorilla/websocket v1.5.3

@@ -34,18 +34,23 @@ func (s *Service) Call(_ context.Context, opts *execclient.CallOpts) ([]byte, er
 	if opts.From != nil {
 		callOpts["from"] = opts.From.String()
 	}
+
 	if opts.To != nil {
 		callOpts["to"] = opts.To.String()
 	}
+
 	if opts.Gas != nil {
 		callOpts["gas"] = util.MarshalBigInt(opts.Gas)
 	}
+
 	if opts.GasPrice != nil {
 		callOpts["gasPrice"] = util.MarshalBigInt(opts.GasPrice)
 	}
+
 	if opts.Value != nil {
 		callOpts["value"] = util.MarshalBigInt(opts.Value)
 	}
+
 	if opts.Data != nil {
 		callOpts["data"] = fmt.Sprintf("%#x", opts.Data)
 	}
@@ -56,6 +61,7 @@ func (s *Service) Call(_ context.Context, opts *execclient.CallOpts) ([]byte, er
 	}
 
 	var callResults string
+
 	err := s.client.CallFor(&callResults, "eth_call", callOpts, block)
 	if err != nil {
 		return nil, errors.Wrap(err, "eth_call failed")
