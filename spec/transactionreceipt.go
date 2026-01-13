@@ -52,6 +52,7 @@ func (t *TransactionReceipt) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements json.Unmarshaler.
 func (t *TransactionReceipt) UnmarshalJSON(input []byte) error {
 	var data transactionReceiptJSON
+
 	err := json.Unmarshal(input, &data)
 	if err != nil {
 		return errors.Wrap(err, "invalid JSON")

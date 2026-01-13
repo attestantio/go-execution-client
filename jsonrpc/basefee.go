@@ -51,6 +51,7 @@ func (s *Service) BaseFee(_ context.Context,
 		if err != nil {
 			return nil, errors.Wrap(err, "unhandled block ID")
 		}
+
 		blockID = util.MarshalInt64(tmp)
 	}
 
@@ -58,15 +59,18 @@ func (s *Service) BaseFee(_ context.Context,
 	if err := s.client.CallFor(&res, "eth_feeHistory", "0x1", blockID, []float64{0}); err != nil {
 		return nil, errors.Wrap(err, "call to eth_feeHistory failed")
 	}
+
 	if len(res.BaseFeePerGas) == 0 {
 		return nil, errors.New("no data returned")
 	}
 
 	var baseFeePerGasStr string
+
 	if pending {
 		if len(res.BaseFeePerGas) < 2 {
 			return nil, errors.New("no pending data returned")
 		}
+
 		baseFeePerGasStr = res.BaseFeePerGas[1]
 	} else {
 		baseFeePerGasStr = res.BaseFeePerGas[0]

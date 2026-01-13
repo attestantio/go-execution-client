@@ -73,6 +73,7 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 		logLevel: zerolog.GlobalLevel(),
 		timeout:  2 * time.Second,
 	}
+
 	for _, p := range params {
 		if params != nil {
 			p.apply(&parameters)
@@ -82,9 +83,11 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	if parameters.address == "" {
 		return nil, errors.New("no address specified")
 	}
+
 	if parameters.webSocketAddress == "" {
 		parameters.webSocketAddress = parameters.address
 	}
+
 	if parameters.timeout == 0 {
 		return nil, errors.New("no timeout specified")
 	}

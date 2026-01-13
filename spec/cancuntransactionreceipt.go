@@ -69,15 +69,19 @@ type cancunTransactionReceiptJSON struct {
 // MarshalJSON implements json.Marshaler.
 func (t *CancunTransactionReceipt) MarshalJSON() ([]byte, error) {
 	var contractAddress *string
+
 	if t.ContractAddress != nil {
 		tmp := util.MarshalNullableAddress((*t.ContractAddress)[:])
 		contractAddress = &tmp
 	}
+
 	var to *string
+
 	if t.To != nil {
 		tmp := util.MarshalNullableAddress(t.To[:])
 		to = &tmp
 	}
+
 	receipt := &cancunTransactionReceiptJSON{
 		BlobGasUsed:       util.MarshalUint32(t.BlobGasUsed),
 		BlockHash:         util.MarshalByteArray(t.BlockHash[:]),
@@ -112,9 +116,21 @@ func (t *CancunTransactionReceipt) UnmarshalJSON(input []byte) error {
 	return t.unpack(&data)
 }
 
+// String returns a string version of the structure.
+func (t *CancunTransactionReceipt) String() string {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(bytes.TrimSuffix(data, []byte("\n")))
+}
+
 func (t *CancunTransactionReceipt) unpack(data *cancunTransactionReceiptJSON) error {
-	var err error
-	var success bool
+	var (
+		err     error
+		success bool
+	)
 
 	if data.BlobGasPrice != "" {
 		t.BlobGasPrice, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.BlobGasPrice), 16)
@@ -128,25 +144,30 @@ func (t *CancunTransactionReceipt) unpack(data *cancunTransactionReceiptJSON) er
 		if err != nil {
 			return errors.Wrap(err, "blob gas used invalid")
 		}
+
 		t.BlobGasUsed = uint32(tmp)
 	}
 
 	if data.BlockHash == "" {
 		return errors.New("block hash missing")
 	}
+
 	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.BlockHash))
 	if err != nil {
 		return errors.Wrap(err, "block hash invalid")
 	}
+
 	copy(t.BlockHash[:], hash)
 
 	if data.BlockNumber == "" {
 		return errors.New("block number missing")
 	}
+
 	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.BlockNumber), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "block number invalid")
 	}
+
 	t.BlockNumber = uint32(tmp)
 
 	if data.ContractAddress != nil {
@@ -154,6 +175,7 @@ func (t *CancunTransactionReceipt) unpack(data *cancunTransactionReceiptJSON) er
 		if err != nil {
 			return errors.Wrap(err, "contract address invalid")
 		}
+
 		var contractAddress types.Address
 		copy(contractAddress[:], address)
 		t.ContractAddress = &contractAddress
@@ -162,15 +184,18 @@ func (t *CancunTransactionReceipt) unpack(data *cancunTransactionReceiptJSON) er
 	if data.CumulativeGasUsed == "" {
 		return errors.New("cumulative gas used missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.CumulativeGasUsed), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "cumulative gas used invalid")
 	}
+
 	t.CumulativeGasUsed = uint32(tmp)
 
 	if data.EffectiveGasPrice == "" {
 		return errors.New("effective gas price missing")
 	}
+
 	t.EffectiveGasPrice, err = strconv.ParseUint(util.PreUnmarshalHexString(data.EffectiveGasPrice), 16, 64)
 	if err != nil {
 		return errors.Wrap(err, "effective gas price invalid")
@@ -179,19 +204,23 @@ func (t *CancunTransactionReceipt) unpack(data *cancunTransactionReceiptJSON) er
 	if data.From == "" {
 		return errors.New("from missing")
 	}
+
 	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.From))
 	if err != nil {
 		return errors.Wrap(err, "from invalid")
 	}
+
 	copy(t.From[:], address)
 
 	if data.GasUsed == "" {
 		return errors.New("gas used missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.GasUsed), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "gas used invalid")
 	}
+
 	t.GasUsed = uint32(tmp)
 
 	t.Logs = data.Logs
@@ -199,6 +228,7 @@ func (t *CancunTransactionReceipt) unpack(data *cancunTransactionReceiptJSON) er
 	if data.LogsBloom == "" {
 		return errors.New("logs bloom missing")
 	}
+
 	t.LogsBloom, err = hex.DecodeString(util.PreUnmarshalHexString(data.LogsBloom))
 	if err != nil {
 		return errors.Wrap(err, "logs bloom invalid")
@@ -207,10 +237,12 @@ func (t *CancunTransactionReceipt) unpack(data *cancunTransactionReceiptJSON) er
 	if data.Status == "" {
 		return errors.New("status missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Status), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "status invalid")
 	}
+
 	t.Status = uint32(tmp)
 
 	if data.To != nil {
@@ -218,6 +250,7 @@ func (t *CancunTransactionReceipt) unpack(data *cancunTransactionReceiptJSON) er
 		if err != nil {
 			return errors.Wrap(err, "to invalid")
 		}
+
 		var to types.Address
 		copy(to[:], address)
 		t.To = &to
@@ -226,32 +259,26 @@ func (t *CancunTransactionReceipt) unpack(data *cancunTransactionReceiptJSON) er
 	if data.TransactionHash == "" {
 		return errors.New("transaction hash missing")
 	}
+
 	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.TransactionHash))
 	if err != nil {
 		return errors.Wrap(err, "transaction hash invalid")
 	}
+
 	copy(t.TransactionHash[:], hash)
 
 	if data.TransactionIndex == "" {
 		return errors.New("transaction index missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.TransactionIndex), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "transaction index invalid")
 	}
+
 	t.TransactionIndex = uint32(tmp)
 
 	t.Type = data.Type
 
 	return nil
-}
-
-// String returns a string version of the structure.
-func (t *CancunTransactionReceipt) String() string {
-	data, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(bytes.TrimSuffix(data, []byte("\n")))
 }

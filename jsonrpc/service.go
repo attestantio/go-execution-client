@@ -16,7 +16,6 @@ package jsonrpc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -71,24 +70,40 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 		},
 	}
 
-	base, address, err := parseAddress(parameters.address)
+	addrResult, err := parseAddress(parameters.address)
 	if err != nil {
 		return nil, err
 	}
 
+	base := addrResult.Base
+	address := addrResult.Masked
+
 	webSocketAddress := parameters.webSocketAddress
-	if strings.HasPrefix(webSocketAddress, "http://") {
-		webSocketAddress = fmt.Sprintf("ws://%s", webSocketAddress[7:])
+
+	// Protocol strings should be constants
+	const (
+		httpScheme  = "http://"
+		httpsScheme = "https://"
+		wsScheme    = "ws://"
+		wssScheme   = "wss://"
+	)
+
+	if strings.HasPrefix(webSocketAddress, httpScheme) {
+		webSocketAddress = wsScheme + webSocketAddress[len(httpScheme):]
 	}
-	if strings.HasPrefix(webSocketAddress, "https://") {
-		webSocketAddress = fmt.Sprintf("wss://%s", webSocketAddress[8:])
+
+	if strings.HasPrefix(webSocketAddress, httpsScheme) {
+		webSocketAddress = wssScheme + webSocketAddress[len(httpsScheme):]
 	}
+
 	if !strings.HasPrefix(webSocketAddress, "ws") {
-		webSocketAddress = fmt.Sprintf("ws://%s", webSocketAddress)
+		webSocketAddress = wsScheme + webSocketAddress
 	}
+
 	if webSocketAddress == "" {
 		webSocketAddress = base.String()
 	}
+
 	log.Trace().Stringer("address", address).Str("web_socket_address", webSocketAddress).Msg("Addresses configured")
 
 	rpcClient := jsonrpc.NewClientWithOpts(base.String(), &jsonrpc.RPCClientOpts{
@@ -123,6 +138,16 @@ func New(ctx context.Context, params ...Parameter) (execclient.Service, error) {
 	return s, nil
 }
 
+// Name provides the name of the service.
+func (*Service) Name() string {
+	return "json-rpc"
+}
+
+// Address provides the address for the connection.
+func (s *Service) Address() string {
+	return s.address
+}
+
 // fetchStaticValues fetches values that never change.
 // This caches the values, avoiding future API calls.
 func (*Service) fetchStaticValues(_ context.Context) error {
@@ -140,28 +165,27 @@ func (s *Service) checkCapabilities(ctx context.Context) error {
 	return nil
 }
 
-// Name provides the name of the service.
-func (*Service) Name() string {
-	return "json-rpc"
-}
-
-// Address provides the address for the connection.
-func (s *Service) Address() string {
-	return s.address
-}
-
 // close closes the service, freeing up resources.
 func (*Service) close() {
 }
 
-//nolint:revive
-func parseAddress(address string) (*url.URL, *url.URL, error) {
+// AddressResult contains both the parsed base URL and a masked version for logging.
+// Used as a clear named result to avoid unnamed returns of the same type (confusing-results warning).
+type AddressResult struct {
+	Base   *url.URL // Parsed base URL for the connection
+	Masked *url.URL // Sanitized version of the base URL with masked passwords, paths, and query values for logging
+}
+
+func parseAddress(address string) (AddressResult, error) {
+	// Protocol strings should be constants
+	const httpPrefix = "http://"
 	if !strings.HasPrefix(address, "http") {
-		address = fmt.Sprintf("http://%s", address)
+		address = httpPrefix + address
 	}
+
 	base, err := url.Parse(address)
 	if err != nil {
-		return nil, nil, errors.Join(errors.New("invalid URL"), err)
+		return AddressResult{}, errors.Join(errors.New("invalid URL"), err)
 	}
 	// Remove any trailing slash from the path.
 	base.Path = strings.TrimSuffix(base.Path, "/")
@@ -173,15 +197,17 @@ func parseAddress(address string) (*url.URL, *url.URL, error) {
 		user := baseAddress.User.Username()
 		baseAddress.User = url.UserPassword(user, "xxxxx")
 	}
+
 	if baseAddress.Path != "" {
 		// Mask the path.
 		baseAddress.Path = "xxxxx"
 	}
+
 	if baseAddress.RawQuery != "" {
 		// Mask all query values.
 		sensitiveRegex := regexp.MustCompile("=([^&]*)(&)?")
 		baseAddress.RawQuery = sensitiveRegex.ReplaceAllString(baseAddress.RawQuery, "=xxxxx$2")
 	}
 
-	return base, &baseAddress, nil
+	return AddressResult{Base: base, Masked: &baseAddress}, nil
 }

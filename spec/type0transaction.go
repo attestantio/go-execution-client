@@ -68,24 +68,31 @@ type type0TransactionJSON struct {
 // MarshalJSON marshals a type 0 transaction.
 func (t *Type0Transaction) MarshalJSON() ([]byte, error) {
 	var blockHash *string
+
 	if t.BlockHash != nil {
 		tmp := fmt.Sprintf("%#x", *t.BlockHash)
 		blockHash = &tmp
 	}
+
 	var blockNumber *string
+
 	if t.BlockNumber != nil {
 		tmp := util.MarshalUint32(*t.BlockNumber)
 		blockNumber = &tmp
 	}
+
 	var chainID string
 	if t.ChainID != nil {
 		chainID = util.MarshalBigInt(t.ChainID)
 	}
+
 	to := ""
 	if t.To != nil {
 		to = util.MarshalByteArray(t.To[:])
 	}
+
 	var transactionIndex *string
+
 	if t.TransactionIndex != nil {
 		tmp := util.MarshalUint32(*t.TransactionIndex)
 		transactionIndex = &tmp
@@ -121,16 +128,65 @@ func (t *Type0Transaction) UnmarshalJSON(input []byte) error {
 	return t.unpack(&data)
 }
 
+// String returns a string version of the structure.
+func (t *Type0Transaction) String() string {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(bytes.TrimSuffix(data, []byte("\n")))
+}
+
+// MarshalRLP returns an RLP representation of the transaction.
+func (t *Type0Transaction) MarshalRLP() ([]byte, error) {
+	// Create generic buffers, to allow reuse.
+	bufA := bytes.NewBuffer(make([]byte, 0, 1024))
+	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
+
+	// Transaction data.
+	util.RLPUint64(bufA, t.Nonce)
+	util.RLPUint64(bufA, t.GasPrice)
+	util.RLPUint64(bufA, uint64(t.Gas))
+
+	if t.To != nil {
+		util.RLPAddress(bufA, *t.To)
+	} else {
+		util.RLPNil(bufA)
+	}
+
+	if t.Value != nil {
+		util.RLPBytes(bufA, t.Value.Bytes())
+	} else {
+		util.RLPNil(bufA)
+	}
+
+	util.RLPBytes(bufA, t.Input)
+
+	// Signature.
+	util.RLPBytes(bufA, t.V.Bytes())
+	util.RLPBytes(bufA, t.R.Bytes())
+	util.RLPBytes(bufA, t.S.Bytes())
+
+	util.RLPList(bufB, bufA.Bytes())
+
+	return bufB.Bytes(), nil
+}
+
 //nolint:gocyclo
 func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
-	var err error
-	var success bool
+	var (
+		err     error
+		success bool
+	)
 
 	// Guard to ensure we are unpacking the correct transaction type.
+
 	if data.Type == "" {
 		// If type is empty it implies a type 0 transaction.
 		data.Type = "0x0"
 	}
+
 	if data.Type != "0x0" {
 		return errors.New("type incorrect")
 	}
@@ -140,16 +196,20 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 		if err != nil {
 			return errors.Wrap(err, "block hash invalid")
 		}
+
 		blockHash := types.Hash{}
 		copy(blockHash[:], hash)
 		t.BlockHash = &blockHash
+
 		if data.BlockNumber == nil {
 			return errors.New("block number missing")
 		}
+
 		tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(*data.BlockNumber), 16, 32)
 		if err != nil {
 			return errors.Wrap(err, "block number invalid")
 		}
+
 		blockNumber := uint32(tmp)
 		t.BlockNumber = &blockNumber
 	}
@@ -164,24 +224,29 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	if data.From == "" {
 		return errors.New("from missing")
 	}
+
 	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.From))
 	if err != nil {
 		return errors.Wrap(err, "from invalid")
 	}
+
 	copy(t.From[:], address)
 
 	if data.Gas == "" {
 		return errors.New("gas missing")
 	}
+
 	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.Gas), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "gas invalid")
 	}
+
 	t.Gas = uint32(tmp)
 
 	if data.GasPrice == "" {
 		return errors.New("gas price missing")
 	}
+
 	t.GasPrice, err = strconv.ParseUint(util.PreUnmarshalHexString(data.GasPrice), 16, 64)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("gas price for %s invalid", data.Hash))
@@ -190,10 +255,12 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	if data.Hash == "" {
 		return errors.New("hash missing")
 	}
+
 	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.Hash))
 	if err != nil {
 		return errors.Wrap(err, "hash invalid")
 	}
+
 	copy(t.Hash[:], hash)
 
 	t.Input, err = hex.DecodeString(util.PreUnmarshalHexString(data.Input))
@@ -204,6 +271,7 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	if data.Nonce == "" {
 		return errors.New("nonce missing")
 	}
+
 	t.Nonce, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Nonce), 16, 64)
 	if err != nil {
 		return errors.Wrap(err, "nonce invalid")
@@ -214,6 +282,7 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 		if err != nil {
 			return errors.Wrap(err, "to invalid")
 		}
+
 		var to types.Address
 		copy(to[:], address)
 		t.To = &to
@@ -224,6 +293,7 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 		if err != nil {
 			return errors.Wrap(err, "transaction index invalid")
 		}
+
 		transactionIndex := uint32(tmp)
 		t.TransactionIndex = &transactionIndex
 	}
@@ -231,6 +301,7 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	if data.Value == "" {
 		return errors.New("value missing")
 	}
+
 	t.Value, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.Value), 16)
 	if !success {
 		return errors.New("value invalid")
@@ -239,6 +310,7 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	if data.V == "" {
 		return errors.New("v missing")
 	}
+
 	t.V, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.V), 16)
 	if !success {
 		return errors.New("v invalid")
@@ -247,6 +319,7 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	if data.R == "" {
 		return errors.New("r missing")
 	}
+
 	t.R, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.R), 16)
 	if !success {
 		return errors.New("r invalid")
@@ -255,52 +328,11 @@ func (t *Type0Transaction) unpack(data *type0TransactionJSON) error {
 	if data.S == "" {
 		return errors.New("s missing")
 	}
+
 	t.S, success = new(big.Int).SetString(util.PreUnmarshalHexString(data.S), 16)
 	if !success {
 		return errors.New("s invalid")
 	}
 
 	return nil
-}
-
-// MarshalRLP returns an RLP representation of the transaction.
-func (t *Type0Transaction) MarshalRLP() ([]byte, error) {
-	// Create generic buffers, to allow reuse.
-	bufA := bytes.NewBuffer(make([]byte, 0, 1024))
-	bufB := bytes.NewBuffer(make([]byte, 0, 1024))
-
-	// Transaction data.
-	util.RLPUint64(bufA, t.Nonce)
-	util.RLPUint64(bufA, t.GasPrice)
-	util.RLPUint64(bufA, uint64(t.Gas))
-	if t.To != nil {
-		util.RLPAddress(bufA, *t.To)
-	} else {
-		util.RLPNil(bufA)
-	}
-	if t.Value != nil {
-		util.RLPBytes(bufA, t.Value.Bytes())
-	} else {
-		util.RLPNil(bufA)
-	}
-	util.RLPBytes(bufA, t.Input)
-
-	// Signature.
-	util.RLPBytes(bufA, t.V.Bytes())
-	util.RLPBytes(bufA, t.R.Bytes())
-	util.RLPBytes(bufA, t.S.Bytes())
-
-	util.RLPList(bufB, bufA.Bytes())
-
-	return bufB.Bytes(), nil
-}
-
-// String returns a string version of the structure.
-func (t *Type0Transaction) String() string {
-	data, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(bytes.TrimSuffix(data, []byte("\n")))
 }

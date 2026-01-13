@@ -59,6 +59,7 @@ func (t *Transaction) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements json.Unmarshaler.
 func (t *Transaction) UnmarshalJSON(input []byte) error {
 	var data transactionTypeJSON
+
 	err := json.Unmarshal(input, &data)
 	if err != nil {
 		return errors.Wrap(err, "invalid JSON")
@@ -110,17 +111,15 @@ func (t *Transaction) AccessList() []*AccessListEntry {
 // AuthorizationList returns the access list of the transaction.
 // This value can be nil, if the transaction does not support authorization lists.
 func (t *Transaction) AuthorizationList() []*AuthorizationListEntry {
-	switch t.Type {
-	case TransactionType0:
-		return nil
-	case TransactionType1:
-		return nil
-	case TransactionType2:
-		return nil
-	case TransactionType3:
-		return nil
-	case TransactionType4:
+	// Only Type 4 transactions support authorization lists
+	if t.Type == TransactionType4 {
 		return t.Type4Transaction.AuthorizationList
+	}
+
+	// Validate the transaction type
+	switch t.Type {
+	case TransactionType0, TransactionType1, TransactionType2, TransactionType3:
+		return nil
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -129,16 +128,14 @@ func (t *Transaction) AuthorizationList() []*AuthorizationListEntry {
 // BlobGasUsed returns the blob gas used by the transaction.
 // This value can be nil, if the transaction does not support this (e.g. type 0 transactions).
 func (t *Transaction) BlobGasUsed() *uint32 {
-	switch t.Type {
-	case TransactionType0:
-		return nil
-	case TransactionType1:
-		return nil
-	case TransactionType2:
-		return nil
-	case TransactionType3:
+	// Only Type 3 transactions track blob gas usage
+	if t.Type == TransactionType3 {
 		return t.Type3Transaction.BlobGasUsed
-	case TransactionType4:
+	}
+
+	// Validate the transaction type
+	switch t.Type {
+	case TransactionType0, TransactionType1, TransactionType2, TransactionType4:
 		return nil
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
@@ -148,16 +145,14 @@ func (t *Transaction) BlobGasUsed() *uint32 {
 // BlobVersionedHashes returns the blob versioned hashes of the transaction.
 // This value can be nil, if the transaction is not a blob transaction.
 func (t *Transaction) BlobVersionedHashes() []types.VersionedHash {
-	switch t.Type {
-	case TransactionType0:
-		return nil
-	case TransactionType1:
-		return nil
-	case TransactionType2:
-		return nil
-	case TransactionType3:
+	// Only Type 3 transactions (blob transactions) have versioned hashes
+	if t.Type == TransactionType3 {
 		return t.Type3Transaction.BlobVersionedHashes
-	case TransactionType4:
+	}
+
+	// Validate the transaction type
+	switch t.Type {
+	case TransactionType0, TransactionType1, TransactionType2, TransactionType4:
 		return nil
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
@@ -242,16 +237,14 @@ func (t *Transaction) Gas() uint32 {
 // This will be 0 for transactions that do not have an individual
 // gas price, for example type 2 transactions.
 func (t *Transaction) GasPrice() uint64 {
+	// Only Type 0 and Type 1 transactions have a gas price field
 	switch t.Type {
 	case TransactionType0:
 		return t.Type0Transaction.GasPrice
 	case TransactionType1:
 		return t.Type1Transaction.GasPrice
-	case TransactionType2:
-		return 0
-	case TransactionType3:
-		return 0
-	case TransactionType4:
+	case TransactionType2, TransactionType3, TransactionType4:
+		// EIP-1559 and later transactions use maxFeePerGas instead
 		return 0
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
@@ -297,17 +290,17 @@ func (t *Transaction) Input() []byte {
 // MaxFeePerGas returns the maximum fee per gas paid by the transaction.
 // This value can be 0, if the transaction does not support this (e.g. type 0 transactions).
 func (t *Transaction) MaxFeePerGas() uint64 {
+	// EIP-1559 and later transactions (Type 2+) support maxFeePerGas
 	switch t.Type {
-	case TransactionType0:
-		return 0
-	case TransactionType1:
-		return 0
 	case TransactionType2:
 		return t.Type2Transaction.MaxFeePerGas
 	case TransactionType3:
 		return t.Type3Transaction.MaxFeePerGas
 	case TransactionType4:
 		return t.Type4Transaction.MaxFeePerGas
+	case TransactionType0, TransactionType1:
+		// Legacy transactions use gasPrice instead
+		return 0
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}
@@ -316,16 +309,14 @@ func (t *Transaction) MaxFeePerGas() uint64 {
 // MaxFeePerBlobGas returns the maximum fee per blob gas paid by the transaction.
 // This value can be 0, if the transaction does not support this (e.g. type 0 transactions).
 func (t *Transaction) MaxFeePerBlobGas() uint64 {
-	switch t.Type {
-	case TransactionType0:
-		return 0
-	case TransactionType1:
-		return 0
-	case TransactionType2:
-		return 0
-	case TransactionType3:
+	// Only Type 3 transactions (blob transactions) support maxFeePerBlobGas
+	if t.Type == TransactionType3 {
 		return t.Type3Transaction.MaxFeePerBlobGas
-	case TransactionType4:
+	}
+
+	// Validate the transaction type
+	switch t.Type {
+	case TransactionType0, TransactionType1, TransactionType2, TransactionType4:
 		return 0
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
@@ -335,17 +326,17 @@ func (t *Transaction) MaxFeePerBlobGas() uint64 {
 // MaxPriorityFeePerGas returns the maximum priority fee per gas paid by the transaction.
 // This value can be 0, if the transaction does not support this (e.g. type 0 transactions).
 func (t *Transaction) MaxPriorityFeePerGas() uint64 {
+	// EIP-1559 and later transactions (Type 2+) support maxPriorityFeePerGas
 	switch t.Type {
-	case TransactionType0:
-		return 0
-	case TransactionType1:
-		return 0
 	case TransactionType2:
 		return t.Type2Transaction.MaxPriorityFeePerGas
 	case TransactionType3:
 		return t.Type3Transaction.MaxPriorityFeePerGas
 	case TransactionType4:
 		return t.Type4Transaction.MaxPriorityFeePerGas
+	case TransactionType0, TransactionType1:
+		// Legacy transactions don't have priority fees
+		return 0
 	default:
 		panic(fmt.Errorf("unhandled transaction type %s", t.Type))
 	}

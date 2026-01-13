@@ -38,12 +38,15 @@ func (s *Service) Block(ctx context.Context, blockID string) (*spec.Block, error
 		blockID == "latest" {
 		return s.blockAtHeight(ctx, -1)
 	}
+
 	if _, isIdentifier := blockIdentifiers[blockID]; isIdentifier {
 		return s.blockAtIdentifier(ctx, blockID)
 	}
+
 	if strings.HasPrefix(blockID, "0x") {
 		return s.blockAtHash(ctx, blockID)
 	}
+
 	height, err := strconv.ParseInt(blockID, 10, 64)
 	if err != nil {
 		return nil, errors.Wrap(err, "unhandled block ID")

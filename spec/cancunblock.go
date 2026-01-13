@@ -133,10 +133,13 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 		return errors.Wrap(err, "invalid JSON")
 	}
 
-	var success bool
-	var err error
+	var (
+		success bool
+		err     error
+	)
 
 	// Although base fee per gas is required in Cancun, this also covers pre-Cancun blocks so it is considered optional.
+
 	if data.BaseFeePerGas != "" {
 		b.BaseFeePerGas, err = strconv.ParseUint(util.PreUnmarshalHexString(data.BaseFeePerGas), 16, 64)
 		if err != nil {
@@ -147,15 +150,18 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	if data.BlobGasUsed == "" {
 		return errors.New("blob gas used missing")
 	}
+
 	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.BlobGasUsed), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "blob gas used invalid")
 	}
+
 	b.BlobGasUsed = tmp
 
 	if data.Difficulty == "" {
 		return errors.New("difficulty missing")
 	}
+
 	b.Difficulty, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Difficulty), 16, 64)
 	if err != nil {
 		return errors.Wrap(err, "difficulty invalid")
@@ -164,15 +170,18 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	if data.ExcessBlobGas == "" {
 		return errors.New("excess blob gas missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.ExcessBlobGas), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "excess blob gas invalid")
 	}
+
 	b.ExcessBlobGas = tmp
 
 	if data.ExtraData == "" {
 		return errors.New("extra data missing")
 	}
+
 	b.ExtraData, err = hex.DecodeString(util.PreUnmarshalHexString(data.ExtraData))
 	if err != nil {
 		return errors.Wrap(err, "extra data invalid")
@@ -181,33 +190,40 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	if data.GasUsed == "" {
 		return errors.New("gas used missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.GasUsed), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "gas used invalid")
 	}
+
 	b.GasUsed = uint32(tmp)
 
 	if data.GasLimit == "" {
 		return errors.New("gas limit missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.GasLimit), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "gas limit invalid")
 	}
+
 	b.GasLimit = uint32(tmp)
 
 	if data.Hash == "" {
 		return errors.New("hash missing")
 	}
+
 	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.Hash))
 	if err != nil {
 		return errors.Wrap(err, "hash invalid")
 	}
+
 	copy(b.Hash[:], hash)
 
 	if data.LogsBloom == "" {
 		return errors.New("logs bloom missing")
 	}
+
 	b.LogsBloom, err = hex.DecodeString(util.PreUnmarshalHexString(data.LogsBloom))
 	if err != nil {
 		return errors.Wrap(err, "logs bloom invalid")
@@ -216,24 +232,29 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	if data.Miner == "" {
 		return errors.New("miner missing")
 	}
+
 	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.Miner))
 	if err != nil {
 		return errors.Wrap(err, "miner invalid")
 	}
+
 	copy(b.Miner[:], address)
 
 	if data.MixHash == "" {
 		return errors.New("mix hash missing")
 	}
+
 	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.MixHash))
 	if err != nil {
 		return errors.Wrap(err, "mix hash invalid")
 	}
+
 	copy(b.MixHash[:], hash)
 
 	if data.Nonce == "" {
 		return errors.New("nonce missing")
 	}
+
 	b.Nonce, err = hex.DecodeString(util.PreUnmarshalHexString(data.Nonce))
 	if err != nil {
 		return errors.Wrap(err, "nonce invalid")
@@ -242,42 +263,51 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	if data.Number == "" {
 		return errors.New("number missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Number), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "number invalid")
 	}
+
 	b.Number = uint32(tmp)
 
 	if data.ParentBeaconBlockRoot == "" {
 		return errors.New("parent beacon block root missing")
 	}
+
 	root, err := hex.DecodeString(util.PreUnmarshalHexString(data.ParentBeaconBlockRoot))
 	if err != nil {
 		return errors.Wrap(err, "parent beacon block root invalid")
 	}
+
 	copy(b.ParentBeaconBlockRoot[:], root)
 
 	if data.ParentHash == "" {
 		return errors.New("parent hash missing")
 	}
+
 	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.ParentHash))
 	if err != nil {
 		return errors.Wrap(err, "parent hash invalid")
 	}
+
 	copy(b.ParentHash[:], hash)
 
 	if data.ReceiptsRoot == "" {
 		return errors.New("receipts root missing")
 	}
+
 	root, err = hex.DecodeString(util.PreUnmarshalHexString(data.ReceiptsRoot))
 	if err != nil {
 		return errors.Wrap(err, "receipts root invalid")
 	}
+
 	copy(b.ReceiptsRoot[:], root)
 
 	if data.SHA3Uncles == "" {
 		return errors.New("sha3 uncles missing")
 	}
+
 	b.SHA3Uncles, err = hex.DecodeString(util.PreUnmarshalHexString(data.SHA3Uncles))
 	if err != nil {
 		return errors.Wrap(err, "sha3 uncles invalid")
@@ -286,28 +316,34 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	if data.Size == "" {
 		return errors.New("size missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Size), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "size invalid")
 	}
+
 	b.Size = uint32(tmp)
 
 	if data.StateRoot == "" {
 		return errors.New("state root missing")
 	}
+
 	root, err = hex.DecodeString(util.PreUnmarshalHexString(data.StateRoot))
 	if err != nil {
 		return errors.Wrap(err, "state root invalid")
 	}
+
 	copy(b.StateRoot[:], root)
 
 	if data.Timestamp == "" {
 		return errors.New("timestamp missing")
 	}
+
 	timestamp, err := strconv.ParseInt(util.PreUnmarshalHexString(data.Timestamp), 16, 64)
 	if err != nil {
 		return errors.Wrap(err, "timestamp invalid")
 	}
+
 	b.Timestamp = time.Unix(timestamp, 0)
 
 	if data.TotalDifficulty != "" {
@@ -322,10 +358,12 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	if data.TransactionsRoot == "" {
 		return errors.New("transactions root missing")
 	}
+
 	root, err = hex.DecodeString(util.PreUnmarshalHexString(data.TransactionsRoot))
 	if err != nil {
 		return errors.Wrap(err, "transactions root invalid")
 	}
+
 	copy(b.TransactionsRoot[:], root)
 
 	b.Uncles = make([]types.Hash, len(data.Uncles))
@@ -333,10 +371,12 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 		if uncleStr == "" {
 			return errors.New("uncle missing")
 		}
+
 		hash, err := hex.DecodeString(util.PreUnmarshalHexString(uncleStr))
 		if err != nil {
 			return errors.Wrap(err, "uncle invalid")
 		}
+
 		copy(b.Uncles[i][:], hash)
 	}
 
@@ -345,10 +385,12 @@ func (b *CancunBlock) UnmarshalJSON(input []byte) error {
 	if data.WithdrawalsRoot == "" {
 		return errors.New("withdrawals root missing")
 	}
+
 	root, err = hex.DecodeString(util.PreUnmarshalHexString(data.WithdrawalsRoot))
 	if err != nil {
 		return errors.Wrap(err, "withdrawals root invalid")
 	}
+
 	copy(b.WithdrawalsRoot[:], root)
 
 	return nil

@@ -55,6 +55,16 @@ func (i *Issuance) UnmarshalJSON(input []byte) error {
 	return i.unpack(&data)
 }
 
+// String returns a string version of the structure.
+func (i *Issuance) String() string {
+	data, err := json.Marshal(i)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(data)
+}
+
 func (i *Issuance) unpack(data *issuanceJSON) error {
 	var err error
 
@@ -86,14 +96,4 @@ func (i *Issuance) unpack(data *issuanceJSON) error {
 	}
 
 	return nil
-}
-
-// String returns a string version of the structure.
-func (i *Issuance) String() string {
-	data, err := json.Marshal(i)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(data)
 }

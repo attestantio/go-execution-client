@@ -36,57 +36,73 @@ func (s *Service) EstimateGas(_ context.Context,
 	}
 
 	opts := make(map[string]any)
+
 	opts["type"] = tx.Type.String()
 	if tx.ChainID != nil {
 		opts["chainId"] = util.MarshalBigInt(tx.ChainID)
 	}
+
 	opts["from"] = tx.From.String()
 	if tx.Nonce != nil {
 		opts["nonce"] = util.MarshalUint64(*tx.Nonce)
 	}
+
 	if tx.To != nil {
 		opts["to"] = tx.To.String()
 	}
+
 	if tx.Input != nil {
 		opts["input"] = fmt.Sprintf("%#x", tx.Input)
 	}
+
 	if tx.Gas != nil {
 		opts["gas"] = util.MarshalBigInt(tx.Gas)
 	}
+
 	if tx.GasPrice != nil {
 		opts["gasPrice"] = util.MarshalBigInt(tx.GasPrice)
 	}
+
 	if tx.MaxPriorityFeePerGas != nil {
 		opts["maxPriorityFeePerGas"] = util.MarshalBigInt(tx.MaxPriorityFeePerGas)
 	}
+
 	if tx.MaxFeePerGas != nil {
 		opts["maxFeePerGas"] = util.MarshalBigInt(tx.MaxFeePerGas)
 	}
+
 	if tx.MaxFeePerBlobGas != nil {
 		opts["maxFeePerBlobGas"] = util.MarshalBigInt(tx.MaxFeePerBlobGas)
 	}
+
 	if tx.Value != nil {
 		opts["value"] = util.MarshalBigInt(tx.Value)
 	}
+
 	if tx.AccessList != nil {
 		accessList, err := json.Marshal(tx.AccessList)
 		if err != nil {
 			return nil, err
 		}
+
 		opts["accessList"] = string(accessList)
 	}
+
 	if tx.BlobVersionedHashes != nil {
 		blobVersionedHashes, err := json.Marshal(tx.BlobVersionedHashes)
 		if err != nil {
 			return nil, err
 		}
+
 		opts["blobVersionedHashes"] = string(blobVersionedHashes)
 	}
+
 	if tx.Blobs != nil {
 		blobs, err := json.Marshal(tx.Blobs)
 		if err != nil {
 			return nil, err
 		}
+
 		opts["blobs"] = string(blobs)
 	}
 

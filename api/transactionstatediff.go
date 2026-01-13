@@ -45,6 +45,7 @@ func (t *TransactionStateDiff) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		b := json.RawMessage(tmp)
 		balance = &b
 	}
@@ -55,6 +56,7 @@ func (t *TransactionStateDiff) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		n := json.RawMessage(tmp)
 		nonce = &n
 	}
@@ -65,6 +67,7 @@ func (t *TransactionStateDiff) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		item := json.RawMessage(tmp)
 		storage[fmt.Sprintf("%#x", k)] = &item
 	}
@@ -86,12 +89,23 @@ func (t *TransactionStateDiff) UnmarshalJSON(input []byte) error {
 	return t.unpack(&data)
 }
 
+// String returns a string version of the structure.
+func (t *TransactionStateDiff) String() string {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(data)
+}
+
 func (t *TransactionStateDiff) unpack(data *transactionStateDiffJSON) error {
 	if data.Balance != nil && (*data.Balance)[0] == '{' {
 		var stateChange TransactionStateChange
 		if err := json.Unmarshal(*data.Balance, &stateChange); err != nil {
 			return errors.Wrap(err, "invalid balance JSON")
 		}
+
 		t.Balance = &stateChange
 	}
 
@@ -100,6 +114,7 @@ func (t *TransactionStateDiff) unpack(data *transactionStateDiffJSON) error {
 		if err := json.Unmarshal(*data.Nonce, &stateChange); err != nil {
 			return errors.Wrap(err, "invalid nonce JSON")
 		}
+
 		t.Nonce = &stateChange
 	}
 
@@ -109,23 +124,16 @@ func (t *TransactionStateDiff) unpack(data *transactionStateDiffJSON) error {
 		if err := json.Unmarshal([]byte(*v), &stateChange); err != nil {
 			return errors.Wrap(err, "invalid storage JSON")
 		}
+
 		key, err := util.StrToHash("storage key", k)
 		if err != nil {
 			return err
 		}
+
 		storage[key] = &stateChange
 	}
+
 	t.Storage = storage
 
 	return nil
-}
-
-// String returns a string version of the structure.
-func (t *TransactionStateDiff) String() string {
-	data, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(data)
 }

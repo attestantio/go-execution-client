@@ -82,34 +82,50 @@ func (t *BerlinTransactionEvent) UnmarshalJSON(input []byte) error {
 	return t.unpack(&data)
 }
 
+// String returns a string version of the structure.
+func (t *BerlinTransactionEvent) String() string {
+	data, err := json.Marshal(t)
+	if err != nil {
+		return fmt.Sprintf("ERR: %v", err)
+	}
+
+	return string(bytes.TrimSuffix(data, []byte("\n")))
+}
+
 func (t *BerlinTransactionEvent) unpack(data *berlinTransactionEventJSON) error {
 	var err error
 
 	if data.Address == "" {
 		return errors.New("address missing")
 	}
+
 	address, err := hex.DecodeString(util.PreUnmarshalHexString(data.Address))
 	if err != nil {
 		return errors.Wrap(err, "address invalid")
 	}
+
 	copy(t.Address[:], address)
 
 	if data.BlockHash == "" {
 		return errors.New("block hash missing")
 	}
+
 	hash, err := hex.DecodeString(util.PreUnmarshalHexString(data.BlockHash))
 	if err != nil {
 		return errors.Wrap(err, "block hash invalid")
 	}
+
 	copy(t.BlockHash[:], hash)
 
 	if data.BlockNumber == "" {
 		return errors.New("block number missing")
 	}
+
 	tmp, err := strconv.ParseUint(util.PreUnmarshalHexString(data.BlockNumber), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "block number invalid")
 	}
+
 	t.BlockNumber = uint32(tmp)
 
 	if len(data.Data) > 0 {
@@ -118,6 +134,7 @@ func (t *BerlinTransactionEvent) unpack(data *berlinTransactionEventJSON) error 
 			return errors.Wrap(err, "data invalid")
 		}
 	}
+
 	if len(t.Data) == 0 {
 		t.Data = nil
 	}
@@ -125,10 +142,12 @@ func (t *BerlinTransactionEvent) unpack(data *berlinTransactionEventJSON) error 
 	if data.Index == "" {
 		return errors.New("log index missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.Index), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "log index invalid")
 	}
+
 	t.Index = uint32(tmp)
 
 	t.Removed = data.Removed
@@ -139,37 +158,33 @@ func (t *BerlinTransactionEvent) unpack(data *berlinTransactionEventJSON) error 
 		if err != nil {
 			return errors.Wrap(err, "topic invalid")
 		}
+
 		copy(topics[i][:], hash)
 	}
+
 	t.Topics = topics
 
 	if data.TransactionHash == "" {
 		return errors.New("transaction hash missing")
 	}
+
 	hash, err = hex.DecodeString(util.PreUnmarshalHexString(data.TransactionHash))
 	if err != nil {
 		return errors.Wrap(err, "transaction hash invalid")
 	}
+
 	copy(t.TransactionHash[:], hash)
 
 	if data.TransactionIndex == "" {
 		return errors.New("transaction index missing")
 	}
+
 	tmp, err = strconv.ParseUint(util.PreUnmarshalHexString(data.TransactionIndex), 16, 32)
 	if err != nil {
 		return errors.Wrap(err, "transaction index invalid")
 	}
+
 	t.TransactionIndex = uint32(tmp)
 
 	return nil
-}
-
-// String returns a string version of the structure.
-func (t *BerlinTransactionEvent) String() string {
-	data, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Sprintf("ERR: %v", err)
-	}
-
-	return string(bytes.TrimSuffix(data, []byte("\n")))
 }
